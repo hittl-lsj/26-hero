@@ -1,0 +1,6 @@
+../Core/Src/bsp_can.c:15:6:can_Init	56	static
+../Core/Src/bsp_can.c:38:6:boxSend	24	static
+../Core/Src/bsp_can.c:62:6:motorset	16	static
+../Core/Src/bsp_can.c:73:6:Null_Point	16	static
+../Core/Src/bsp_can.c:81:6:angle_multiround_calc	16	static
+../Core/Src/bsp_can.c:105:6:HAL_CAN_RxFifo0MsgPendingCallback	24	static

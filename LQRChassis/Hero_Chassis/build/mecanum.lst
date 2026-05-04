@@ -1,0 +1,343 @@
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"mecanum.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "Core/Src/mecanum.c"
+  20              		.global	__aeabi_f2d
+  21              		.global	__aeabi_dmul
+  22              		.global	__aeabi_dadd
+  23              		.global	__aeabi_d2iz
+  24              		.section	.text.mecanum_calc,"ax",%progbits
+  25              		.align	1
+  26              		.global	mecanum_calc
+  27              		.syntax unified
+  28              		.thumb
+  29              		.thumb_func
+  31              	mecanum_calc:
+  32              	.LVL0:
+  33              	.LFB134:
+   1:Core/Src/mecanum.c **** /*
+   2:Core/Src/mecanum.c ****  * mecanum.c
+   3:Core/Src/mecanum.c ****  *
+   4:Core/Src/mecanum.c ****  *  Created on: Aug 21, 2024
+   5:Core/Src/mecanum.c ****  *      Author: yu
+   6:Core/Src/mecanum.c ****  */
+   7:Core/Src/mecanum.c **** #include "main.h"
+   8:Core/Src/mecanum.c **** #include "gpio.h"
+   9:Core/Src/mecanum.c **** #include "mecanum.h"
+  10:Core/Src/mecanum.c **** 
+  11:Core/Src/mecanum.c **** #define WHEEL_PERIMETER 0.4
+  12:Core/Src/mecanum.c **** #define CHASSIS_DECELE_RATIO 19
+  13:Core/Src/mecanum.c **** extern  l_up_real;
+  14:Core/Src/mecanum.c **** extern R__up_real;
+  15:Core/Src/mecanum.c **** //将底盘的线速度和角速度转换为四个麦克纳姆轮的实际转速
+  16:Core/Src/mecanum.c **** void mecanum_calc(Chassis_Speed *speed, int16_t *out_speed)
+  17:Core/Src/mecanum.c **** {
+  34              		.loc 1 17 1 view -0
+  35              		.cfi_startproc
+  36              		@ args = 0, pretend = 0, frame = 8
+  37              		@ frame_needed = 0, uses_anonymous_args = 0
+  38              		.loc 1 17 1 is_stmt 0 view .LVU1
+  39 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+  40              	.LCFI0:
+  41              		.cfi_def_cfa_offset 24
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s 			page 2
+
+
+  42              		.cfi_offset 4, -24
+  43              		.cfi_offset 5, -20
+  44              		.cfi_offset 6, -16
+  45              		.cfi_offset 7, -12
+  46              		.cfi_offset 8, -8
+  47              		.cfi_offset 14, -4
+  48 0004 2DED028B 		vpush.64	{d8}
+  49              	.LCFI1:
+  50              		.cfi_def_cfa_offset 32
+  51              		.cfi_offset 80, -32
+  52              		.cfi_offset 81, -28
+  53 0008 82B0     		sub	sp, sp, #8
+  54              	.LCFI2:
+  55              		.cfi_def_cfa_offset 40
+  56 000a 0446     		mov	r4, r0
+  57 000c 8846     		mov	r8, r1
+  18:Core/Src/mecanum.c ****     int16_t wheel_rpm[4];   //int16
+  58              		.loc 1 18 5 is_stmt 1 view .LVU2
+  19:Core/Src/mecanum.c ****     float wheel_rpm_ratio;
+  59              		.loc 1 19 5 view .LVU3
+  20:Core/Src/mecanum.c **** //计算轮子转速比例因子   //WHEEL_PERIMETER 轮子的周长 //CHASSIS_DECELE_RATIO 减速�
+  21:Core/Src/mecanum.c ****     wheel_rpm_ratio = 60.0f / (WHEEL_PERIMETER * 3.14159f);//转换单位m/s变为转每
+  60              		.loc 1 21 5 view .LVU4
+  61              	.LVL1:
+  22:Core/Src/mecanum.c ****     
+  23:Core/Src/mecanum.c **** //麦克纳姆轮的运动学模型
+  24:Core/Src/mecanum.c ****     wheel_rpm[0] = (-speed->vx + speed->vy + speed->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;
+  62              		.loc 1 24 5 view .LVU5
+  63              		.loc 1 24 39 is_stmt 0 view .LVU6
+  64 000e D0ED018A 		vldr.32	s17, [r0, #4]
+  65              		.loc 1 24 27 view .LVU7
+  66 0012 90ED008A 		vldr.32	s16, [r0]
+  67              		.loc 1 24 32 view .LVU8
+  68 0016 78EEC87A 		vsub.f32	s15, s17, s16
+  69 001a 17EE900A 		vmov	r0, s15
+  70              	.LVL2:
+  71              		.loc 1 24 32 view .LVU9
+  72 001e FFF7FEFF 		bl	__aeabi_f2d
+  73              	.LVL3:
+  74              		.loc 1 24 32 view .LVU10
+  75 0022 0646     		mov	r6, r0
+  76 0024 0F46     		mov	r7, r1
+  77              		.loc 1 24 51 view .LVU11
+  78 0026 A068     		ldr	r0, [r4, #8]	@ float
+  79 0028 FFF7FEFF 		bl	__aeabi_f2d
+  80              	.LVL4:
+  81              		.loc 1 24 56 view .LVU12
+  82 002c 30A3     		adr	r3, .L3
+  83 002e D3E90023 		ldrd	r2, [r3]
+  84 0032 FFF7FEFF 		bl	__aeabi_dmul
+  85              	.LVL5:
+  86 0036 0446     		mov	r4, r0
+  87              	.LVL6:
+  88              		.loc 1 24 56 view .LVU13
+  89 0038 0D46     		mov	r5, r1
+  90              		.loc 1 24 44 view .LVU14
+  91 003a 0246     		mov	r2, r0
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s 			page 3
+
+
+  92 003c 0B46     		mov	r3, r1
+  93 003e 3046     		mov	r0, r6
+  94 0040 3946     		mov	r1, r7
+  95 0042 FFF7FEFF 		bl	__aeabi_dadd
+  96              	.LVL7:
+  97              		.loc 1 24 81 view .LVU15
+  98 0046 2CA3     		adr	r3, .L3+8
+  99 0048 D3E90023 		ldrd	r2, [r3]
+ 100 004c FFF7FEFF 		bl	__aeabi_dmul
+ 101              	.LVL8:
+ 102              		.loc 1 24 18 view .LVU16
+ 103 0050 FFF7FEFF 		bl	__aeabi_d2iz
+ 104              	.LVL9:
+ 105 0054 ADF80000 		strh	r0, [sp]	@ movhi
+  25:Core/Src/mecanum.c ****     wheel_rpm[1] = (speed->vx + speed->vy + speed->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;
+ 106              		.loc 1 25 5 is_stmt 1 view .LVU17
+ 107              		.loc 1 25 31 is_stmt 0 view .LVU18
+ 108 0058 78EE887A 		vadd.f32	s15, s17, s16
+ 109 005c 17EE900A 		vmov	r0, s15
+ 110 0060 FFF7FEFF 		bl	__aeabi_f2d
+ 111              	.LVL10:
+ 112 0064 0246     		mov	r2, r0
+ 113 0066 0B46     		mov	r3, r1
+ 114              		.loc 1 25 43 view .LVU19
+ 115 0068 2046     		mov	r0, r4
+ 116 006a 2946     		mov	r1, r5
+ 117 006c FFF7FEFF 		bl	__aeabi_dadd
+ 118              	.LVL11:
+ 119              		.loc 1 25 80 view .LVU20
+ 120 0070 21A3     		adr	r3, .L3+8
+ 121 0072 D3E90023 		ldrd	r2, [r3]
+ 122 0076 FFF7FEFF 		bl	__aeabi_dmul
+ 123              	.LVL12:
+ 124              		.loc 1 25 18 view .LVU21
+ 125 007a FFF7FEFF 		bl	__aeabi_d2iz
+ 126              	.LVL13:
+ 127 007e ADF80200 		strh	r0, [sp, #2]	@ movhi
+  26:Core/Src/mecanum.c ****     wheel_rpm[2] = (speed->vx - speed->vy + speed->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;
+ 128              		.loc 1 26 5 is_stmt 1 view .LVU22
+ 129              		.loc 1 26 31 is_stmt 0 view .LVU23
+ 130 0082 78EE687A 		vsub.f32	s15, s16, s17
+ 131 0086 17EE900A 		vmov	r0, s15
+ 132 008a FFF7FEFF 		bl	__aeabi_f2d
+ 133              	.LVL14:
+ 134 008e 0246     		mov	r2, r0
+ 135 0090 0B46     		mov	r3, r1
+ 136              		.loc 1 26 43 view .LVU24
+ 137 0092 2046     		mov	r0, r4
+ 138 0094 2946     		mov	r1, r5
+ 139 0096 FFF7FEFF 		bl	__aeabi_dadd
+ 140              	.LVL15:
+ 141              		.loc 1 26 80 view .LVU25
+ 142 009a 17A3     		adr	r3, .L3+8
+ 143 009c D3E90023 		ldrd	r2, [r3]
+ 144 00a0 FFF7FEFF 		bl	__aeabi_dmul
+ 145              	.LVL16:
+ 146              		.loc 1 26 18 view .LVU26
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s 			page 4
+
+
+ 147 00a4 FFF7FEFF 		bl	__aeabi_d2iz
+ 148              	.LVL17:
+ 149 00a8 ADF80400 		strh	r0, [sp, #4]	@ movhi
+  27:Core/Src/mecanum.c ****     wheel_rpm[3] = (-speed->vx - speed->vy + speed->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;
+ 150              		.loc 1 27 5 is_stmt 1 view .LVU27
+ 151              		.loc 1 27 21 is_stmt 0 view .LVU28
+ 152 00ac B1EE488A 		vneg.f32	s16, s16
+ 153              		.loc 1 27 32 view .LVU29
+ 154 00b0 78EE687A 		vsub.f32	s15, s16, s17
+ 155 00b4 17EE900A 		vmov	r0, s15
+ 156 00b8 FFF7FEFF 		bl	__aeabi_f2d
+ 157              	.LVL18:
+ 158 00bc 0246     		mov	r2, r0
+ 159 00be 0B46     		mov	r3, r1
+ 160              		.loc 1 27 44 view .LVU30
+ 161 00c0 2046     		mov	r0, r4
+ 162 00c2 2946     		mov	r1, r5
+ 163 00c4 FFF7FEFF 		bl	__aeabi_dadd
+ 164              	.LVL19:
+ 165              		.loc 1 27 81 view .LVU31
+ 166 00c8 0BA3     		adr	r3, .L3+8
+ 167 00ca D3E90023 		ldrd	r2, [r3]
+ 168 00ce FFF7FEFF 		bl	__aeabi_dmul
+ 169              	.LVL20:
+ 170              		.loc 1 27 18 view .LVU32
+ 171 00d2 FFF7FEFF 		bl	__aeabi_d2iz
+ 172              	.LVL21:
+ 173 00d6 ADF80600 		strh	r0, [sp, #6]	@ movhi
+  28:Core/Src/mecanum.c **** 
+  29:Core/Src/mecanum.c **** 			//将wheel_rpm复制到out_speed
+  30:Core/Src/mecanum.c **** 			    memcpy(out_speed, wheel_rpm, 4 * sizeof(int16_t));
+ 174              		.loc 1 30 8 is_stmt 1 view .LVU33
+ 175 00da 6B46     		mov	r3, sp
+ 176 00dc 03CB     		ldmia	r3!, {r0, r1}
+ 177 00de C8F80000 		str	r0, [r8]	@ unaligned
+ 178 00e2 C8F80410 		str	r1, [r8, #4]	@ unaligned
+  31:Core/Src/mecanum.c **** 
+  32:Core/Src/mecanum.c **** }
+ 179              		.loc 1 32 1 is_stmt 0 view .LVU34
+ 180 00e6 02B0     		add	sp, sp, #8
+ 181              	.LCFI3:
+ 182              		.cfi_def_cfa_offset 32
+ 183              		@ sp needed
+ 184 00e8 BDEC028B 		vldm	sp!, {d8}
+ 185              	.LCFI4:
+ 186              		.cfi_restore 80
+ 187              		.cfi_restore 81
+ 188              		.cfi_def_cfa_offset 24
+ 189 00ec BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 190              	.LVL22:
+ 191              	.L4:
+ 192              		.loc 1 32 1 view .LVU35
+ 193              		.align	3
+ 194              	.L3:
+ 195 00f0 9A999999 		.word	-1717986918
+ 196 00f4 9999D93F 		.word	1071225241
+ 197 00f8 00000000 		.word	0
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s 			page 5
+
+
+ 198 00fc 8EDF4740 		.word	1078452110
+ 199              		.cfi_endproc
+ 200              	.LFE134:
+ 202              		.section	.text.mecanum_Set_Motor_Speed,"ax",%progbits
+ 203              		.align	1
+ 204              		.global	mecanum_Set_Motor_Speed
+ 205              		.syntax unified
+ 206              		.thumb
+ 207              		.thumb_func
+ 209              	mecanum_Set_Motor_Speed:
+ 210              	.LVL23:
+ 211              	.LFB135:
+  33:Core/Src/mecanum.c **** 
+  34:Core/Src/mecanum.c **** //将out_speed里面的给到motor里面
+  35:Core/Src/mecanum.c **** void mecanum_Set_Motor_Speed(int16_t *out_speed)
+  36:Core/Src/mecanum.c **** {
+ 212              		.loc 1 36 1 is_stmt 1 view -0
+ 213              		.cfi_startproc
+ 214              		@ args = 0, pretend = 0, frame = 0
+ 215              		@ frame_needed = 0, uses_anonymous_args = 0
+ 216              		@ link register save eliminated.
+  37:Core/Src/mecanum.c ****     L1 = out_speed[0];
+ 217              		.loc 1 37 5 view .LVU37
+ 218              		.loc 1 37 19 is_stmt 0 view .LVU38
+ 219 0000 B0F90030 		ldrsh	r3, [r0]
+ 220 0004 07EE903A 		vmov	s15, r3	@ int
+ 221              		.loc 1 37 8 view .LVU39
+ 222 0008 F8EEE77A 		vcvt.f32.s32	s15, s15
+ 223 000c 0F4B     		ldr	r3, .L6
+ 224 000e C3ED007A 		vstr.32	s15, [r3]
+  38:Core/Src/mecanum.c ****     L2 = out_speed[1];
+ 225              		.loc 1 38 5 is_stmt 1 view .LVU40
+ 226              		.loc 1 38 19 is_stmt 0 view .LVU41
+ 227 0012 B0F90230 		ldrsh	r3, [r0, #2]
+ 228 0016 07EE903A 		vmov	s15, r3	@ int
+ 229              		.loc 1 38 8 view .LVU42
+ 230 001a F8EEE77A 		vcvt.f32.s32	s15, s15
+ 231 001e 0C4B     		ldr	r3, .L6+4
+ 232 0020 C3ED007A 		vstr.32	s15, [r3]
+  39:Core/Src/mecanum.c ****     R1 = out_speed[2];
+ 233              		.loc 1 39 5 is_stmt 1 view .LVU43
+ 234              		.loc 1 39 19 is_stmt 0 view .LVU44
+ 235 0024 B0F90430 		ldrsh	r3, [r0, #4]
+ 236 0028 07EE903A 		vmov	s15, r3	@ int
+ 237              		.loc 1 39 8 view .LVU45
+ 238 002c F8EEE77A 		vcvt.f32.s32	s15, s15
+ 239 0030 084B     		ldr	r3, .L6+8
+ 240 0032 C3ED007A 		vstr.32	s15, [r3]
+  40:Core/Src/mecanum.c ****     R2 = out_speed[3];
+ 241              		.loc 1 40 5 is_stmt 1 view .LVU46
+ 242              		.loc 1 40 19 is_stmt 0 view .LVU47
+ 243 0036 B0F90630 		ldrsh	r3, [r0, #6]
+ 244 003a 07EE903A 		vmov	s15, r3	@ int
+ 245              		.loc 1 40 8 view .LVU48
+ 246 003e F8EEE77A 		vcvt.f32.s32	s15, s15
+ 247 0042 054B     		ldr	r3, .L6+12
+ 248 0044 C3ED007A 		vstr.32	s15, [r3]
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s 			page 6
+
+
+  41:Core/Src/mecanum.c **** 
+  42:Core/Src/mecanum.c **** }
+ 249              		.loc 1 42 1 view .LVU49
+ 250 0048 7047     		bx	lr
+ 251              	.L7:
+ 252 004a 00BF     		.align	2
+ 253              	.L6:
+ 254 004c 00000000 		.word	L1
+ 255 0050 00000000 		.word	L2
+ 256 0054 00000000 		.word	R1
+ 257 0058 00000000 		.word	R2
+ 258              		.cfi_endproc
+ 259              	.LFE135:
+ 261              		.text
+ 262              	.Letext0:
+ 263              		.file 2 "c:\\msys64\\mingw64\\arm-none-eabi\\include\\machine\\_default_types.h"
+ 264              		.file 3 "c:\\msys64\\mingw64\\arm-none-eabi\\include\\sys\\_stdint.h"
+ 265              		.file 4 "Core/Inc/mecanum.h"
+ 266              		.file 5 "<built-in>"
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s 			page 7
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 mecanum.c
+C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s:25     .text.mecanum_calc:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s:31     .text.mecanum_calc:00000000 mecanum_calc
+C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s:195    .text.mecanum_calc:000000f0 $d
+C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s:203    .text.mecanum_Set_Motor_Speed:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s:209    .text.mecanum_Set_Motor_Speed:00000000 mecanum_Set_Motor_Speed
+C:\Users\lsj\AppData\Local\Temp\cc3J3qJr.s:254    .text.mecanum_Set_Motor_Speed:0000004c $d
+
+UNDEFINED SYMBOLS
+__aeabi_f2d
+__aeabi_dmul
+__aeabi_dadd
+__aeabi_d2iz
+L1
+L2
+R1
+R2

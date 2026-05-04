@@ -1,0 +1,757 @@
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"LQR.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "LQR/LQR.c"
+  20              		.section	.text.anti_windup,"ax",%progbits
+  21              		.align	1
+  22              		.syntax unified
+  23              		.thumb
+  24              		.thumb_func
+  26              	anti_windup:
+  27              	.LVL0:
+  28              	.LFB6:
+   1:LQR/LQR.c     **** #include "LQR.h"
+   2:LQR/LQR.c     **** #include <math.h>
+   3:LQR/LQR.c     **** 
+   4:LQR/LQR.c     **** // 内部函数声明
+   5:LQR/LQR.c     **** static float anti_windup(float integral, float max_integral);
+   6:LQR/LQR.c     **** static float output_limit(float output, float max_output);
+   7:LQR/LQR.c     **** // 初始化LQR速度控制器
+   8:LQR/LQR.c     **** void lqr_speed_init(LQR_SpeedController* ctrl, 
+   9:LQR/LQR.c     ****                    float k_speed, float k_integral,
+  10:LQR/LQR.c     ****                    float max_output, float max_integral) {
+  11:LQR/LQR.c     ****     if (ctrl == NULL) return;
+  12:LQR/LQR.c     ****     // 初始化参数
+  13:LQR/LQR.c     ****     ctrl->k_speed = k_speed;
+  14:LQR/LQR.c     ****     ctrl->k_integral = k_integral;
+  15:LQR/LQR.c     ****     ctrl->max_output = max_output;
+  16:LQR/LQR.c     ****     ctrl->max_integral = max_integral;
+  17:LQR/LQR.c     ****     ctrl->integral = 0.0f;
+  18:LQR/LQR.c     ****     ctrl->prev_error = 0.0f;
+  19:LQR/LQR.c     ****     ctrl->update_time = 0;
+  20:LQR/LQR.c     **** }
+  21:LQR/LQR.c     **** // 更新LQR速度控制计算(需按固定周期调用)
+  22:LQR/LQR.c     **** 
+  23:LQR/LQR.c     **** float   lqr_speed_update(LQR_SpeedController* ctrl, 
+  24:LQR/LQR.c     ****                       float target_speed, float current_speed,
+  25:LQR/LQR.c     ****                       float delta_time) {
+  26:LQR/LQR.c     ****     if (ctrl == NULL || delta_time <= 0.0f) {
+  27:LQR/LQR.c     ****         return 0.0f;
+  28:LQR/LQR.c     ****     }
+  29:LQR/LQR.c     ****     
+  30:LQR/LQR.c     ****     // 计算速度误差
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 2
+
+
+  31:LQR/LQR.c     ****     float error = target_speed - current_speed;
+  32:LQR/LQR.c     ****     
+  33:LQR/LQR.c     ****     // 积分项更新(梯形积分提高精度)
+  34:LQR/LQR.c     ****     ctrl->integral += (error + ctrl->prev_error) * delta_time * 0.5f;
+  35:LQR/LQR.c     ****     ctrl->prev_error = error;
+  36:LQR/LQR.c     ****     
+  37:LQR/LQR.c     ****     // 抗积分饱和
+  38:LQR/LQR.c     ****     ctrl->integral = anti_windup(ctrl->integral, ctrl->max_integral);
+  39:LQR/LQR.c     ****     
+  40:LQR/LQR.c     ****     // LQR控制律: u = k_speed * error + k_integral * integral
+  41:LQR/LQR.c     ****     float control_output = ctrl->k_speed * error + ctrl->k_integral * ctrl->integral;
+  42:LQR/LQR.c     ****     
+  43:LQR/LQR.c     ****     // 输出限幅
+  44:LQR/LQR.c     ****     return output_limit(control_output, ctrl->max_output);
+  45:LQR/LQR.c     **** }
+  46:LQR/LQR.c     **** // 自动更新函数(推荐使用)
+  47:LQR/LQR.c     **** float lqr_speed_update_auto(LQR_SpeedController* ctrl,
+  48:LQR/LQR.c     ****                            float target_speed, float current_speed,
+  49:LQR/LQR.c     ****                            uint32_t current_time) {
+  50:LQR/LQR.c     ****     if (ctrl == NULL) return 0.0f;
+  51:LQR/LQR.c     ****     
+  52:LQR/LQR.c     ****     float delta_time = 0.01f; // 默认10ms
+  53:LQR/LQR.c     ****     
+  54:LQR/LQR.c     ****     if (ctrl->update_time > 0) {
+  55:LQR/LQR.c     ****         // 计算实际时间间隔(秒)
+  56:LQR/LQR.c     ****         delta_time = (current_time - ctrl->update_time) * 0.001f;
+  57:LQR/LQR.c     ****         // 限制时间间隔在合理范围内(1ms ~ 100ms)
+  58:LQR/LQR.c     ****         if (delta_time < 0.001f) delta_time = 0.001f;
+  59:LQR/LQR.c     ****         if (delta_time > 0.1f) delta_time = 0.1f;
+  60:LQR/LQR.c     ****     }
+  61:LQR/LQR.c     ****     
+  62:LQR/LQR.c     ****     ctrl->update_time = current_time;
+  63:LQR/LQR.c     ****     return lqr_speed_update(ctrl, target_speed, current_speed, delta_time);
+  64:LQR/LQR.c     **** }
+  65:LQR/LQR.c     **** // 重置控制器状态(积分清零)
+  66:LQR/LQR.c     **** void lqr_speed_reset(LQR_SpeedController* ctrl) {
+  67:LQR/LQR.c     ****     if (ctrl == NULL) return;
+  68:LQR/LQR.c     ****     
+  69:LQR/LQR.c     ****     ctrl->integral = 0.0f;
+  70:LQR/LQR.c     ****     ctrl->prev_error = 0.0f;
+  71:LQR/LQR.c     ****     ctrl->update_time = 0;
+  72:LQR/LQR.c     **** }
+  73:LQR/LQR.c     **** // 设置控制器参数
+  74:LQR/LQR.c     **** void lqr_speed_set_gains(LQR_SpeedController* ctrl, 
+  75:LQR/LQR.c     ****                         float k_speed, float k_integral) {
+  76:LQR/LQR.c     ****     if (ctrl == NULL) return;
+  77:LQR/LQR.c     ****     
+  78:LQR/LQR.c     ****     ctrl->k_speed = k_speed;
+  79:LQR/LQR.c     ****     ctrl->k_integral = k_integral;
+  80:LQR/LQR.c     **** }
+  81:LQR/LQR.c     **** // 设置输出限幅和积分限幅
+  82:LQR/LQR.c     **** void lqr_speed_set_limits(LQR_SpeedController* ctrl,
+  83:LQR/LQR.c     ****                          float max_output, float max_integral) {
+  84:LQR/LQR.c     ****     if (ctrl == NULL) return;
+  85:LQR/LQR.c     ****     
+  86:LQR/LQR.c     ****     ctrl->max_output = max_output;
+  87:LQR/LQR.c     ****     ctrl->max_integral = max_integral;
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 3
+
+
+  88:LQR/LQR.c     ****     
+  89:LQR/LQR.c     ****     // 立即应用新的积分限幅
+  90:LQR/LQR.c     ****     ctrl->integral = anti_windup(ctrl->integral, max_integral);
+  91:LQR/LQR.c     **** }
+  92:LQR/LQR.c     **** 
+  93:LQR/LQR.c     **** // 内部函数实现
+  94:LQR/LQR.c     **** static float anti_windup(float integral, float max_integral) {
+  29              		.loc 1 94 62 view -0
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33              		@ link register save eliminated.
+  34              		.loc 1 94 62 is_stmt 0 view .LVU1
+  35 0000 F0EE407A 		vmov.f32	s15, s0
+  95:LQR/LQR.c     ****     if (integral > max_integral) return max_integral;
+  36              		.loc 1 95 5 is_stmt 1 view .LVU2
+  37              		.loc 1 95 8 is_stmt 0 view .LVU3
+  38 0004 B4EEE00A 		vcmpe.f32	s0, s1
+  39 0008 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+  40 000c 09DC     		bgt	.L3
+  96:LQR/LQR.c     ****     if (integral < -max_integral) return -max_integral;
+  41              		.loc 1 96 5 is_stmt 1 view .LVU4
+  42              		.loc 1 96 20 is_stmt 0 view .LVU5
+  43 000e B1EE600A 		vneg.f32	s0, s1
+  44              	.LVL1:
+  45              		.loc 1 96 8 view .LVU6
+  46 0012 B4EEE70A 		vcmpe.f32	s0, s15
+  47 0016 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+  48 001a 04DC     		bgt	.L1
+  97:LQR/LQR.c     ****     return integral;
+  49              		.loc 1 97 12 view .LVU7
+  50 001c B0EE670A 		vmov.f32	s0, s15
+  51 0020 7047     		bx	lr
+  52              	.L3:
+  95:LQR/LQR.c     ****     if (integral > max_integral) return max_integral;
+  53              		.loc 1 95 41 view .LVU8
+  54 0022 B0EE600A 		vmov.f32	s0, s1
+  55              	.L1:
+  98:LQR/LQR.c     **** }
+  56              		.loc 1 98 1 view .LVU9
+  57 0026 7047     		bx	lr
+  58              		.cfi_endproc
+  59              	.LFE6:
+  61              		.section	.text.output_limit,"ax",%progbits
+  62              		.align	1
+  63              		.syntax unified
+  64              		.thumb
+  65              		.thumb_func
+  67              	output_limit:
+  68              	.LVL2:
+  69              	.LFB7:
+  99:LQR/LQR.c     **** // 输出限幅
+ 100:LQR/LQR.c     **** static float output_limit(float output, float max_output) {
+  70              		.loc 1 100 59 is_stmt 1 view -0
+  71              		.cfi_startproc
+  72              		@ args = 0, pretend = 0, frame = 0
+  73              		@ frame_needed = 0, uses_anonymous_args = 0
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 4
+
+
+  74              		@ link register save eliminated.
+  75              		.loc 1 100 59 is_stmt 0 view .LVU11
+  76 0000 F0EE407A 		vmov.f32	s15, s0
+ 101:LQR/LQR.c     ****     if (output > max_output) return max_output;
+  77              		.loc 1 101 5 is_stmt 1 view .LVU12
+  78              		.loc 1 101 8 is_stmt 0 view .LVU13
+  79 0004 B4EEE00A 		vcmpe.f32	s0, s1
+  80 0008 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+  81 000c 09DC     		bgt	.L6
+ 102:LQR/LQR.c     ****     if (output < -max_output) return -max_output;
+  82              		.loc 1 102 5 is_stmt 1 view .LVU14
+  83              		.loc 1 102 18 is_stmt 0 view .LVU15
+  84 000e B1EE600A 		vneg.f32	s0, s1
+  85              	.LVL3:
+  86              		.loc 1 102 8 view .LVU16
+  87 0012 B4EEE70A 		vcmpe.f32	s0, s15
+  88 0016 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+  89 001a 04DC     		bgt	.L4
+ 103:LQR/LQR.c     ****     return output;
+  90              		.loc 1 103 12 view .LVU17
+  91 001c B0EE670A 		vmov.f32	s0, s15
+  92 0020 7047     		bx	lr
+  93              	.L6:
+ 101:LQR/LQR.c     ****     if (output > max_output) return max_output;
+  94              		.loc 1 101 37 view .LVU18
+  95 0022 B0EE600A 		vmov.f32	s0, s1
+  96              	.L4:
+ 104:LQR/LQR.c     **** }...
+  97              		.loc 1 104 1 view .LVU19
+  98 0026 7047     		bx	lr
+  99              		.cfi_endproc
+ 100              	.LFE7:
+ 102              		.section	.text.lqr_speed_init,"ax",%progbits
+ 103              		.align	1
+ 104              		.global	lqr_speed_init
+ 105              		.syntax unified
+ 106              		.thumb
+ 107              		.thumb_func
+ 109              	lqr_speed_init:
+ 110              	.LVL4:
+ 111              	.LFB0:
+  10:LQR/LQR.c     ****                    float max_output, float max_integral) {
+ 112              		.loc 1 10 58 is_stmt 1 view -0
+ 113              		.cfi_startproc
+ 114              		@ args = 0, pretend = 0, frame = 0
+ 115              		@ frame_needed = 0, uses_anonymous_args = 0
+ 116              		@ link register save eliminated.
+  11:LQR/LQR.c     ****     if (ctrl == NULL) return;
+ 117              		.loc 1 11 5 view .LVU21
+  11:LQR/LQR.c     ****     if (ctrl == NULL) return;
+ 118              		.loc 1 11 8 is_stmt 0 view .LVU22
+ 119 0000 60B1     		cbz	r0, .L7
+  13:LQR/LQR.c     ****     ctrl->k_speed = k_speed;
+ 120              		.loc 1 13 5 is_stmt 1 view .LVU23
+  13:LQR/LQR.c     ****     ctrl->k_speed = k_speed;
+ 121              		.loc 1 13 19 is_stmt 0 view .LVU24
+ 122 0002 80ED000A 		vstr.32	s0, [r0]
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 5
+
+
+  14:LQR/LQR.c     ****     ctrl->k_integral = k_integral;
+ 123              		.loc 1 14 5 is_stmt 1 view .LVU25
+  14:LQR/LQR.c     ****     ctrl->k_integral = k_integral;
+ 124              		.loc 1 14 22 is_stmt 0 view .LVU26
+ 125 0006 C0ED010A 		vstr.32	s1, [r0, #4]
+  15:LQR/LQR.c     ****     ctrl->max_output = max_output;
+ 126              		.loc 1 15 5 is_stmt 1 view .LVU27
+  15:LQR/LQR.c     ****     ctrl->max_output = max_output;
+ 127              		.loc 1 15 22 is_stmt 0 view .LVU28
+ 128 000a 80ED021A 		vstr.32	s2, [r0, #8]
+  16:LQR/LQR.c     ****     ctrl->max_integral = max_integral;
+ 129              		.loc 1 16 5 is_stmt 1 view .LVU29
+  16:LQR/LQR.c     ****     ctrl->max_integral = max_integral;
+ 130              		.loc 1 16 24 is_stmt 0 view .LVU30
+ 131 000e C0ED031A 		vstr.32	s3, [r0, #12]
+  17:LQR/LQR.c     ****     ctrl->integral = 0.0f;
+ 132              		.loc 1 17 5 is_stmt 1 view .LVU31
+  17:LQR/LQR.c     ****     ctrl->integral = 0.0f;
+ 133              		.loc 1 17 20 is_stmt 0 view .LVU32
+ 134 0012 0022     		movs	r2, #0
+ 135 0014 0261     		str	r2, [r0, #16]	@ float
+  18:LQR/LQR.c     ****     ctrl->prev_error = 0.0f;
+ 136              		.loc 1 18 5 is_stmt 1 view .LVU33
+  18:LQR/LQR.c     ****     ctrl->prev_error = 0.0f;
+ 137              		.loc 1 18 22 is_stmt 0 view .LVU34
+ 138 0016 4261     		str	r2, [r0, #20]	@ float
+  19:LQR/LQR.c     ****     ctrl->update_time = 0;
+ 139              		.loc 1 19 5 is_stmt 1 view .LVU35
+  19:LQR/LQR.c     ****     ctrl->update_time = 0;
+ 140              		.loc 1 19 23 is_stmt 0 view .LVU36
+ 141 0018 0022     		movs	r2, #0
+ 142 001a 8261     		str	r2, [r0, #24]
+ 143              	.L7:
+  20:LQR/LQR.c     **** }
+ 144              		.loc 1 20 1 view .LVU37
+ 145 001c 7047     		bx	lr
+ 146              		.cfi_endproc
+ 147              	.LFE0:
+ 149              		.section	.text.lqr_speed_update,"ax",%progbits
+ 150              		.align	1
+ 151              		.global	lqr_speed_update
+ 152              		.syntax unified
+ 153              		.thumb
+ 154              		.thumb_func
+ 156              	lqr_speed_update:
+ 157              	.LVL5:
+ 158              	.LFB1:
+  25:LQR/LQR.c     ****                       float delta_time) {
+ 159              		.loc 1 25 41 is_stmt 1 view -0
+ 160              		.cfi_startproc
+ 161              		@ args = 0, pretend = 0, frame = 0
+ 162              		@ frame_needed = 0, uses_anonymous_args = 0
+  26:LQR/LQR.c     ****     if (ctrl == NULL || delta_time <= 0.0f) {
+ 163              		.loc 1 26 5 view .LVU39
+  26:LQR/LQR.c     ****     if (ctrl == NULL || delta_time <= 0.0f) {
+ 164              		.loc 1 26 8 is_stmt 0 view .LVU40
+ 165 0000 98B3     		cbz	r0, .L11
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 6
+
+
+  25:LQR/LQR.c     ****                       float delta_time) {
+ 166              		.loc 1 25 41 discriminator 1 view .LVU41
+ 167 0002 10B5     		push	{r4, lr}
+ 168              	.LCFI0:
+ 169              		.cfi_def_cfa_offset 8
+ 170              		.cfi_offset 4, -8
+ 171              		.cfi_offset 14, -4
+ 172 0004 2DED028B 		vpush.64	{d8}
+ 173              	.LCFI1:
+ 174              		.cfi_def_cfa_offset 16
+ 175              		.cfi_offset 80, -16
+ 176              		.cfi_offset 81, -12
+ 177 0008 0446     		mov	r4, r0
+  26:LQR/LQR.c     ****     if (ctrl == NULL || delta_time <= 0.0f) {
+ 178              		.loc 1 26 22 discriminator 1 view .LVU42
+ 179 000a B5EEC01A 		vcmpe.f32	s2, #0
+ 180 000e F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 181 0012 2DD9     		bls	.L12
+  31:LQR/LQR.c     ****     float error = target_speed - current_speed;
+ 182              		.loc 1 31 5 is_stmt 1 view .LVU43
+  31:LQR/LQR.c     ****     float error = target_speed - current_speed;
+ 183              		.loc 1 31 11 is_stmt 0 view .LVU44
+ 184 0014 30EE608A 		vsub.f32	s16, s0, s1
+ 185              	.LVL6:
+  34:LQR/LQR.c     ****     ctrl->integral += (error + ctrl->prev_error) * delta_time * 0.5f;
+ 186              		.loc 1 34 5 is_stmt 1 view .LVU45
+  34:LQR/LQR.c     ****     ctrl->integral += (error + ctrl->prev_error) * delta_time * 0.5f;
+ 187              		.loc 1 34 9 is_stmt 0 view .LVU46
+ 188 0018 90ED040A 		vldr.32	s0, [r0, #16]
+ 189              	.LVL7:
+  34:LQR/LQR.c     ****     ctrl->integral += (error + ctrl->prev_error) * delta_time * 0.5f;
+ 190              		.loc 1 34 36 view .LVU47
+ 191 001c D0ED057A 		vldr.32	s15, [r0, #20]
+  34:LQR/LQR.c     ****     ctrl->integral += (error + ctrl->prev_error) * delta_time * 0.5f;
+ 192              		.loc 1 34 30 view .LVU48
+ 193 0020 77EE887A 		vadd.f32	s15, s15, s16
+  34:LQR/LQR.c     ****     ctrl->integral += (error + ctrl->prev_error) * delta_time * 0.5f;
+ 194              		.loc 1 34 50 view .LVU49
+ 195 0024 67EE817A 		vmul.f32	s15, s15, s2
+  34:LQR/LQR.c     ****     ctrl->integral += (error + ctrl->prev_error) * delta_time * 0.5f;
+ 196              		.loc 1 34 63 view .LVU50
+ 197 0028 B6EE007A 		vmov.f32	s14, #5.0e-1
+ 198 002c 67EE877A 		vmul.f32	s15, s15, s14
+  34:LQR/LQR.c     ****     ctrl->integral += (error + ctrl->prev_error) * delta_time * 0.5f;
+ 199              		.loc 1 34 20 view .LVU51
+ 200 0030 30EE270A 		vadd.f32	s0, s0, s15
+ 201 0034 80ED040A 		vstr.32	s0, [r0, #16]
+  35:LQR/LQR.c     ****     ctrl->prev_error = error;
+ 202              		.loc 1 35 5 is_stmt 1 view .LVU52
+  35:LQR/LQR.c     ****     ctrl->prev_error = error;
+ 203              		.loc 1 35 22 is_stmt 0 view .LVU53
+ 204 0038 80ED058A 		vstr.32	s16, [r0, #20]
+  38:LQR/LQR.c     ****     ctrl->integral = anti_windup(ctrl->integral, ctrl->max_integral);
+ 205              		.loc 1 38 5 is_stmt 1 view .LVU54
+  38:LQR/LQR.c     ****     ctrl->integral = anti_windup(ctrl->integral, ctrl->max_integral);
+ 206              		.loc 1 38 22 is_stmt 0 view .LVU55
+ 207 003c D0ED030A 		vldr.32	s1, [r0, #12]
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 7
+
+
+ 208              	.LVL8:
+  38:LQR/LQR.c     ****     ctrl->integral = anti_windup(ctrl->integral, ctrl->max_integral);
+ 209              		.loc 1 38 22 view .LVU56
+ 210 0040 FFF7FEFF 		bl	anti_windup
+ 211              	.LVL9:
+  38:LQR/LQR.c     ****     ctrl->integral = anti_windup(ctrl->integral, ctrl->max_integral);
+ 212              		.loc 1 38 20 view .LVU57
+ 213 0044 84ED040A 		vstr.32	s0, [r4, #16]
+  41:LQR/LQR.c     ****     float control_output = ctrl->k_speed * error + ctrl->k_integral * ctrl->integral;
+ 214              		.loc 1 41 5 is_stmt 1 view .LVU58
+  41:LQR/LQR.c     ****     float control_output = ctrl->k_speed * error + ctrl->k_integral * ctrl->integral;
+ 215              		.loc 1 41 32 is_stmt 0 view .LVU59
+ 216 0048 D4ED007A 		vldr.32	s15, [r4]
+  41:LQR/LQR.c     ****     float control_output = ctrl->k_speed * error + ctrl->k_integral * ctrl->integral;
+ 217              		.loc 1 41 42 view .LVU60
+ 218 004c 67EE887A 		vmul.f32	s15, s15, s16
+  41:LQR/LQR.c     ****     float control_output = ctrl->k_speed * error + ctrl->k_integral * ctrl->integral;
+ 219              		.loc 1 41 56 view .LVU61
+ 220 0050 94ED017A 		vldr.32	s14, [r4, #4]
+  41:LQR/LQR.c     ****     float control_output = ctrl->k_speed * error + ctrl->k_integral * ctrl->integral;
+ 221              		.loc 1 41 69 view .LVU62
+ 222 0054 20EE070A 		vmul.f32	s0, s0, s14
+ 223              	.LVL10:
+  44:LQR/LQR.c     ****     return output_limit(control_output, ctrl->max_output);
+ 224              		.loc 1 44 5 is_stmt 1 view .LVU63
+  44:LQR/LQR.c     ****     return output_limit(control_output, ctrl->max_output);
+ 225              		.loc 1 44 12 is_stmt 0 view .LVU64
+ 226 0058 D4ED020A 		vldr.32	s1, [r4, #8]
+ 227 005c 37EE800A 		vadd.f32	s0, s15, s0
+ 228              	.LVL11:
+  44:LQR/LQR.c     ****     return output_limit(control_output, ctrl->max_output);
+ 229              		.loc 1 44 12 view .LVU65
+ 230 0060 FFF7FEFF 		bl	output_limit
+ 231              	.LVL12:
+ 232              	.L9:
+  45:LQR/LQR.c     **** }
+ 233              		.loc 1 45 1 view .LVU66
+ 234 0064 BDEC028B 		vldm	sp!, {d8}
+ 235              	.LCFI2:
+ 236              		.cfi_restore 80
+ 237              		.cfi_restore 81
+ 238              		.cfi_def_cfa_offset 8
+ 239 0068 10BD     		pop	{r4, pc}
+ 240              	.LVL13:
+ 241              	.L11:
+ 242              	.LCFI3:
+ 243              		.cfi_def_cfa_offset 0
+ 244              		.cfi_restore 4
+ 245              		.cfi_restore 14
+  27:LQR/LQR.c     ****         return 0.0f;
+ 246              		.loc 1 27 16 view .LVU67
+ 247 006a 9FED030A 		vldr.32	s0, .L17
+ 248              	.LVL14:
+  45:LQR/LQR.c     **** }
+ 249              		.loc 1 45 1 view .LVU68
+ 250 006e 7047     		bx	lr
+ 251              	.LVL15:
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 8
+
+
+ 252              	.L12:
+ 253              	.LCFI4:
+ 254              		.cfi_def_cfa_offset 16
+ 255              		.cfi_offset 4, -8
+ 256              		.cfi_offset 14, -4
+ 257              		.cfi_offset 80, -16
+ 258              		.cfi_offset 81, -12
+  27:LQR/LQR.c     ****         return 0.0f;
+ 259              		.loc 1 27 16 view .LVU69
+ 260 0070 9FED010A 		vldr.32	s0, .L17
+ 261              	.LVL16:
+  27:LQR/LQR.c     ****         return 0.0f;
+ 262              		.loc 1 27 16 view .LVU70
+ 263 0074 F6E7     		b	.L9
+ 264              	.L18:
+ 265 0076 00BF     		.align	2
+ 266              	.L17:
+ 267 0078 00000000 		.word	0
+ 268              		.cfi_endproc
+ 269              	.LFE1:
+ 271              		.section	.text.lqr_speed_update_auto,"ax",%progbits
+ 272              		.align	1
+ 273              		.global	lqr_speed_update_auto
+ 274              		.syntax unified
+ 275              		.thumb
+ 276              		.thumb_func
+ 278              	lqr_speed_update_auto:
+ 279              	.LVL17:
+ 280              	.LFB2:
+  49:LQR/LQR.c     ****                            uint32_t current_time) {
+ 281              		.loc 1 49 51 is_stmt 1 view -0
+ 282              		.cfi_startproc
+ 283              		@ args = 0, pretend = 0, frame = 0
+ 284              		@ frame_needed = 0, uses_anonymous_args = 0
+  50:LQR/LQR.c     ****     if (ctrl == NULL) return 0.0f;
+ 285              		.loc 1 50 5 view .LVU72
+  50:LQR/LQR.c     ****     if (ctrl == NULL) return 0.0f;
+ 286              		.loc 1 50 8 is_stmt 0 view .LVU73
+ 287 0000 20B3     		cbz	r0, .L23
+  49:LQR/LQR.c     ****                            uint32_t current_time) {
+ 288              		.loc 1 49 51 view .LVU74
+ 289 0002 08B5     		push	{r3, lr}
+ 290              	.LCFI5:
+ 291              		.cfi_def_cfa_offset 8
+ 292              		.cfi_offset 3, -8
+ 293              		.cfi_offset 14, -4
+ 294 0004 0246     		mov	r2, r0
+  52:LQR/LQR.c     ****     float delta_time = 0.01f; // 默认10ms
+ 295              		.loc 1 52 5 is_stmt 1 view .LVU75
+ 296              	.LVL18:
+  54:LQR/LQR.c     ****     if (ctrl->update_time > 0) {
+ 297              		.loc 1 54 5 view .LVU76
+  54:LQR/LQR.c     ****     if (ctrl->update_time > 0) {
+ 298              		.loc 1 54 13 is_stmt 0 view .LVU77
+ 299 0006 8369     		ldr	r3, [r0, #24]
+  54:LQR/LQR.c     ****     if (ctrl->update_time > 0) {
+ 300              		.loc 1 54 8 view .LVU78
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 9
+
+
+ 301 0008 CBB1     		cbz	r3, .L24
+  56:LQR/LQR.c     ****         delta_time = (current_time - ctrl->update_time) * 0.001f;
+ 302              		.loc 1 56 9 is_stmt 1 view .LVU79
+  56:LQR/LQR.c     ****         delta_time = (current_time - ctrl->update_time) * 0.001f;
+ 303              		.loc 1 56 36 is_stmt 0 view .LVU80
+ 304 000a CB1A     		subs	r3, r1, r3
+ 305 000c 01EE103A 		vmov	s2, r3	@ int
+  56:LQR/LQR.c     ****         delta_time = (current_time - ctrl->update_time) * 0.001f;
+ 306              		.loc 1 56 57 view .LVU81
+ 307 0010 B8EE411A 		vcvt.f32.u32	s2, s2
+  56:LQR/LQR.c     ****         delta_time = (current_time - ctrl->update_time) * 0.001f;
+ 308              		.loc 1 56 20 view .LVU82
+ 309 0014 DFED0F7A 		vldr.32	s15, .L31
+ 310 0018 21EE271A 		vmul.f32	s2, s2, s15
+ 311              	.LVL19:
+  58:LQR/LQR.c     ****         if (delta_time < 0.001f) delta_time = 0.001f;
+ 312              		.loc 1 58 9 is_stmt 1 view .LVU83
+  58:LQR/LQR.c     ****         if (delta_time < 0.001f) delta_time = 0.001f;
+ 313              		.loc 1 58 12 is_stmt 0 view .LVU84
+ 314 001c B4EEE71A 		vcmpe.f32	s2, s15
+ 315 0020 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 316 0024 01D5     		bpl	.L22
+  58:LQR/LQR.c     ****         if (delta_time < 0.001f) delta_time = 0.001f;
+ 317              		.loc 1 58 45 view .LVU85
+ 318 0026 B0EE671A 		vmov.f32	s2, s15
+ 319              	.LVL20:
+ 320              	.L22:
+  59:LQR/LQR.c     ****         if (delta_time > 0.1f) delta_time = 0.1f;
+ 321              		.loc 1 59 9 is_stmt 1 view .LVU86
+  59:LQR/LQR.c     ****         if (delta_time > 0.1f) delta_time = 0.1f;
+ 322              		.loc 1 59 12 is_stmt 0 view .LVU87
+ 323 002a DFED0B7A 		vldr.32	s15, .L31+4
+ 324 002e B4EEE71A 		vcmpe.f32	s2, s15
+ 325 0032 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 326 0036 04DD     		ble	.L21
+  59:LQR/LQR.c     ****         if (delta_time > 0.1f) delta_time = 0.1f;
+ 327              		.loc 1 59 43 view .LVU88
+ 328 0038 9FED071A 		vldr.32	s2, .L31+4
+ 329              	.LVL21:
+  59:LQR/LQR.c     ****         if (delta_time > 0.1f) delta_time = 0.1f;
+ 330              		.loc 1 59 43 view .LVU89
+ 331 003c 01E0     		b	.L21
+ 332              	.LVL22:
+ 333              	.L24:
+  52:LQR/LQR.c     ****     float delta_time = 0.01f; // 默认10ms
+ 334              		.loc 1 52 11 view .LVU90
+ 335 003e 9FED071A 		vldr.32	s2, .L31+8
+ 336              	.LVL23:
+ 337              	.L21:
+  62:LQR/LQR.c     ****     ctrl->update_time = current_time;
+ 338              		.loc 1 62 5 is_stmt 1 view .LVU91
+  62:LQR/LQR.c     ****     ctrl->update_time = current_time;
+ 339              		.loc 1 62 23 is_stmt 0 view .LVU92
+ 340 0042 9161     		str	r1, [r2, #24]
+  63:LQR/LQR.c     ****     return lqr_speed_update(ctrl, target_speed, current_speed, delta_time);
+ 341              		.loc 1 63 5 is_stmt 1 view .LVU93
+  63:LQR/LQR.c     ****     return lqr_speed_update(ctrl, target_speed, current_speed, delta_time);
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 10
+
+
+ 342              		.loc 1 63 12 is_stmt 0 view .LVU94
+ 343 0044 1046     		mov	r0, r2
+ 344              	.LVL24:
+  63:LQR/LQR.c     ****     return lqr_speed_update(ctrl, target_speed, current_speed, delta_time);
+ 345              		.loc 1 63 12 view .LVU95
+ 346 0046 FFF7FEFF 		bl	lqr_speed_update
+ 347              	.LVL25:
+  64:LQR/LQR.c     **** }
+ 348              		.loc 1 64 1 view .LVU96
+ 349 004a 08BD     		pop	{r3, pc}
+ 350              	.LVL26:
+ 351              	.L23:
+ 352              	.LCFI6:
+ 353              		.cfi_def_cfa_offset 0
+ 354              		.cfi_restore 3
+ 355              		.cfi_restore 14
+  50:LQR/LQR.c     ****     if (ctrl == NULL) return 0.0f;
+ 356              		.loc 1 50 30 view .LVU97
+ 357 004c 9FED040A 		vldr.32	s0, .L31+12
+ 358              	.LVL27:
+  64:LQR/LQR.c     **** }
+ 359              		.loc 1 64 1 view .LVU98
+ 360 0050 7047     		bx	lr
+ 361              	.L32:
+ 362 0052 00BF     		.align	2
+ 363              	.L31:
+ 364 0054 6F12833A 		.word	981668463
+ 365 0058 CDCCCC3D 		.word	1036831949
+ 366 005c 0AD7233C 		.word	1008981770
+ 367 0060 00000000 		.word	0
+ 368              		.cfi_endproc
+ 369              	.LFE2:
+ 371              		.section	.text.lqr_speed_reset,"ax",%progbits
+ 372              		.align	1
+ 373              		.global	lqr_speed_reset
+ 374              		.syntax unified
+ 375              		.thumb
+ 376              		.thumb_func
+ 378              	lqr_speed_reset:
+ 379              	.LVL28:
+ 380              	.LFB3:
+  66:LQR/LQR.c     **** void lqr_speed_reset(LQR_SpeedController* ctrl) {
+ 381              		.loc 1 66 49 is_stmt 1 view -0
+ 382              		.cfi_startproc
+ 383              		@ args = 0, pretend = 0, frame = 0
+ 384              		@ frame_needed = 0, uses_anonymous_args = 0
+ 385              		@ link register save eliminated.
+  67:LQR/LQR.c     ****     if (ctrl == NULL) return;
+ 386              		.loc 1 67 5 view .LVU100
+  67:LQR/LQR.c     ****     if (ctrl == NULL) return;
+ 387              		.loc 1 67 8 is_stmt 0 view .LVU101
+ 388 0000 20B1     		cbz	r0, .L33
+  69:LQR/LQR.c     ****     ctrl->integral = 0.0f;
+ 389              		.loc 1 69 5 is_stmt 1 view .LVU102
+  69:LQR/LQR.c     ****     ctrl->integral = 0.0f;
+ 390              		.loc 1 69 20 is_stmt 0 view .LVU103
+ 391 0002 0022     		movs	r2, #0
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 11
+
+
+ 392 0004 0261     		str	r2, [r0, #16]	@ float
+  70:LQR/LQR.c     ****     ctrl->prev_error = 0.0f;
+ 393              		.loc 1 70 5 is_stmt 1 view .LVU104
+  70:LQR/LQR.c     ****     ctrl->prev_error = 0.0f;
+ 394              		.loc 1 70 22 is_stmt 0 view .LVU105
+ 395 0006 4261     		str	r2, [r0, #20]	@ float
+  71:LQR/LQR.c     ****     ctrl->update_time = 0;
+ 396              		.loc 1 71 5 is_stmt 1 view .LVU106
+  71:LQR/LQR.c     ****     ctrl->update_time = 0;
+ 397              		.loc 1 71 23 is_stmt 0 view .LVU107
+ 398 0008 0022     		movs	r2, #0
+ 399 000a 8261     		str	r2, [r0, #24]
+ 400              	.L33:
+  72:LQR/LQR.c     **** }
+ 401              		.loc 1 72 1 view .LVU108
+ 402 000c 7047     		bx	lr
+ 403              		.cfi_endproc
+ 404              	.LFE3:
+ 406              		.section	.text.lqr_speed_set_gains,"ax",%progbits
+ 407              		.align	1
+ 408              		.global	lqr_speed_set_gains
+ 409              		.syntax unified
+ 410              		.thumb
+ 411              		.thumb_func
+ 413              	lqr_speed_set_gains:
+ 414              	.LVL29:
+ 415              	.LFB4:
+  75:LQR/LQR.c     ****                         float k_speed, float k_integral) {
+ 416              		.loc 1 75 58 is_stmt 1 view -0
+ 417              		.cfi_startproc
+ 418              		@ args = 0, pretend = 0, frame = 0
+ 419              		@ frame_needed = 0, uses_anonymous_args = 0
+ 420              		@ link register save eliminated.
+  76:LQR/LQR.c     ****     if (ctrl == NULL) return;
+ 421              		.loc 1 76 5 view .LVU110
+  76:LQR/LQR.c     ****     if (ctrl == NULL) return;
+ 422              		.loc 1 76 8 is_stmt 0 view .LVU111
+ 423 0000 18B1     		cbz	r0, .L35
+  78:LQR/LQR.c     ****     ctrl->k_speed = k_speed;
+ 424              		.loc 1 78 5 is_stmt 1 view .LVU112
+  78:LQR/LQR.c     ****     ctrl->k_speed = k_speed;
+ 425              		.loc 1 78 19 is_stmt 0 view .LVU113
+ 426 0002 80ED000A 		vstr.32	s0, [r0]
+  79:LQR/LQR.c     ****     ctrl->k_integral = k_integral;
+ 427              		.loc 1 79 5 is_stmt 1 view .LVU114
+  79:LQR/LQR.c     ****     ctrl->k_integral = k_integral;
+ 428              		.loc 1 79 22 is_stmt 0 view .LVU115
+ 429 0006 C0ED010A 		vstr.32	s1, [r0, #4]
+ 430              	.L35:
+  80:LQR/LQR.c     **** }
+ 431              		.loc 1 80 1 view .LVU116
+ 432 000a 7047     		bx	lr
+ 433              		.cfi_endproc
+ 434              	.LFE4:
+ 436              		.section	.text.lqr_speed_set_limits,"ax",%progbits
+ 437              		.align	1
+ 438              		.global	lqr_speed_set_limits
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 12
+
+
+ 439              		.syntax unified
+ 440              		.thumb
+ 441              		.thumb_func
+ 443              	lqr_speed_set_limits:
+ 444              	.LVL30:
+ 445              	.LFB5:
+  83:LQR/LQR.c     ****                          float max_output, float max_integral) {
+ 446              		.loc 1 83 64 is_stmt 1 view -0
+ 447              		.cfi_startproc
+ 448              		@ args = 0, pretend = 0, frame = 0
+ 449              		@ frame_needed = 0, uses_anonymous_args = 0
+  84:LQR/LQR.c     ****     if (ctrl == NULL) return;
+ 450              		.loc 1 84 5 view .LVU118
+  84:LQR/LQR.c     ****     if (ctrl == NULL) return;
+ 451              		.loc 1 84 8 is_stmt 0 view .LVU119
+ 452 0000 60B1     		cbz	r0, .L40
+  83:LQR/LQR.c     ****                          float max_output, float max_integral) {
+ 453              		.loc 1 83 64 view .LVU120
+ 454 0002 10B5     		push	{r4, lr}
+ 455              	.LCFI7:
+ 456              		.cfi_def_cfa_offset 8
+ 457              		.cfi_offset 4, -8
+ 458              		.cfi_offset 14, -4
+ 459 0004 0446     		mov	r4, r0
+  86:LQR/LQR.c     ****     ctrl->max_output = max_output;
+ 460              		.loc 1 86 5 is_stmt 1 view .LVU121
+  86:LQR/LQR.c     ****     ctrl->max_output = max_output;
+ 461              		.loc 1 86 22 is_stmt 0 view .LVU122
+ 462 0006 80ED020A 		vstr.32	s0, [r0, #8]
+  87:LQR/LQR.c     ****     ctrl->max_integral = max_integral;
+ 463              		.loc 1 87 5 is_stmt 1 view .LVU123
+  87:LQR/LQR.c     ****     ctrl->max_integral = max_integral;
+ 464              		.loc 1 87 24 is_stmt 0 view .LVU124
+ 465 000a C0ED030A 		vstr.32	s1, [r0, #12]
+  90:LQR/LQR.c     ****     ctrl->integral = anti_windup(ctrl->integral, max_integral);
+ 466              		.loc 1 90 5 is_stmt 1 view .LVU125
+  90:LQR/LQR.c     ****     ctrl->integral = anti_windup(ctrl->integral, max_integral);
+ 467              		.loc 1 90 22 is_stmt 0 view .LVU126
+ 468 000e 90ED040A 		vldr.32	s0, [r0, #16]
+ 469              	.LVL31:
+  90:LQR/LQR.c     ****     ctrl->integral = anti_windup(ctrl->integral, max_integral);
+ 470              		.loc 1 90 22 view .LVU127
+ 471 0012 FFF7FEFF 		bl	anti_windup
+ 472              	.LVL32:
+  90:LQR/LQR.c     ****     ctrl->integral = anti_windup(ctrl->integral, max_integral);
+ 473              		.loc 1 90 20 view .LVU128
+ 474 0016 84ED040A 		vstr.32	s0, [r4, #16]
+  91:LQR/LQR.c     **** }
+ 475              		.loc 1 91 1 view .LVU129
+ 476 001a 10BD     		pop	{r4, pc}
+ 477              	.LVL33:
+ 478              	.L40:
+ 479              	.LCFI8:
+ 480              		.cfi_def_cfa_offset 0
+ 481              		.cfi_restore 4
+ 482              		.cfi_restore 14
+  91:LQR/LQR.c     **** }
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 13
+
+
+ 483              		.loc 1 91 1 view .LVU130
+ 484 001c 7047     		bx	lr
+ 485              		.cfi_endproc
+ 486              	.LFE5:
+ 488              		.text
+ 489              	.Letext0:
+ 490              		.file 2 "c:\\msys64\\mingw64\\arm-none-eabi\\include\\machine\\_default_types.h"
+ 491              		.file 3 "c:\\msys64\\mingw64\\arm-none-eabi\\include\\sys\\_stdint.h"
+ 492              		.file 4 "LQR/LQR.h"
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s 			page 14
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 LQR.c
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:21     .text.anti_windup:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:26     .text.anti_windup:00000000 anti_windup
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:62     .text.output_limit:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:67     .text.output_limit:00000000 output_limit
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:103    .text.lqr_speed_init:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:109    .text.lqr_speed_init:00000000 lqr_speed_init
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:150    .text.lqr_speed_update:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:156    .text.lqr_speed_update:00000000 lqr_speed_update
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:267    .text.lqr_speed_update:00000078 $d
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:272    .text.lqr_speed_update_auto:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:278    .text.lqr_speed_update_auto:00000000 lqr_speed_update_auto
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:364    .text.lqr_speed_update_auto:00000054 $d
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:372    .text.lqr_speed_reset:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:378    .text.lqr_speed_reset:00000000 lqr_speed_reset
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:407    .text.lqr_speed_set_gains:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:413    .text.lqr_speed_set_gains:00000000 lqr_speed_set_gains
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:437    .text.lqr_speed_set_limits:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccQ1VZUZ.s:443    .text.lqr_speed_set_limits:00000000 lqr_speed_set_limits
+
+NO UNDEFINED SYMBOLS

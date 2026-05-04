@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "bsp_can.h": "c",
+        "bmi088.h": "c",
+        "compare": "c"
+    },
+    "cmake.sourceDirectory": "C:/D/zly/new/yingxiongfenban/shangban/HY_OmniStandard_2024-master/HY_OmniStandard_2024-master"
+}

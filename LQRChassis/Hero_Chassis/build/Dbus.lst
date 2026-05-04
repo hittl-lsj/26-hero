@@ -1,0 +1,768 @@
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"Dbus.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "Core/Src/Dbus.c"
+  20              		.section	.text.RC_abs,"ax",%progbits
+  21              		.align	1
+  22              		.syntax unified
+  23              		.thumb
+  24              		.thumb_func
+  26              	RC_abs:
+  27              	.LVL0:
+  28              	.LFB136:
+   1:Core/Src/Dbus.c **** /*
+   2:Core/Src/Dbus.c ****  * Dbus.c
+   3:Core/Src/Dbus.c ****  *
+   4:Core/Src/Dbus.c ****  *  Created on: Jul 17, 2024
+   5:Core/Src/Dbus.c ****  *      Author: yu
+   6:Core/Src/Dbus.c ****  */
+   7:Core/Src/Dbus.c **** 
+   8:Core/Src/Dbus.c **** 
+   9:Core/Src/Dbus.c **** #include "Dbus.h"
+  10:Core/Src/Dbus.c **** #include "string.h"
+  11:Core/Src/Dbus.c **** #include "memory.h"
+  12:Core/Src/Dbus.c **** 
+  13:Core/Src/Dbus.c **** 
+  14:Core/Src/Dbus.c **** 
+  15:Core/Src/Dbus.c **** 
+  16:Core/Src/Dbus.c **** RC_Ctrl_t rc_ctrl;
+  17:Core/Src/Dbus.c **** extern UART_HandleTypeDef huart3;//要写一个这个，不然会报错
+  18:Core/Src/Dbus.c **** uint16_t DR16_Received;
+  19:Core/Src/Dbus.c **** //官方解码
+  20:Core/Src/Dbus.c **** void dbus_to_rc(volatile const uint8_t *dbus_buf,RC_Ctrl_t *rc_ctrl)//volatile 表示重新读取�
+  21:Core/Src/Dbus.c **** {
+  22:Core/Src/Dbus.c **** 	if(dbus_buf==NULL||rc_ctrl==NULL)
+  23:Core/Src/Dbus.c **** 	{
+  24:Core/Src/Dbus.c **** 		return;
+  25:Core/Src/Dbus.c **** 	}
+  26:Core/Src/Dbus.c **** 
+  27:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch0=(dbus_buf[0]|(dbus_buf[1]<<8))&0x07ff;
+  28:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch1=((dbus_buf[1]>>3)|(dbus_buf[2]<<5))&0x7ff;
+  29:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch2=((dbus_buf[2]>>6)|(dbus_buf[3]<<2)|(dbus_buf[4]<<10))&0x07ff;
+  30:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3=((dbus_buf[4]>>1)|(dbus_buf[5]<<7))&0x07ff;
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 2
+
+
+  31:Core/Src/Dbus.c **** 
+  32:Core/Src/Dbus.c **** 	rc_ctrl->rc.s1=((dbus_buf[5]>>4)&0x0003);
+  33:Core/Src/Dbus.c **** 	rc_ctrl->rc.s2=((dbus_buf[5]>>4)&0x000C)>>2;
+  34:Core/Src/Dbus.c **** 
+  35:Core/Src/Dbus.c **** 	rc_ctrl->mouse.x=dbus_buf[6]|(dbus_buf[7]<<8);
+  36:Core/Src/Dbus.c **** 	rc_ctrl->mouse.y=dbus_buf[8]|(dbus_buf[9]<<8);
+  37:Core/Src/Dbus.c **** 	rc_ctrl->mouse.z=dbus_buf[10]|(dbus_buf[11]<<8);
+  38:Core/Src/Dbus.c **** 	rc_ctrl->mouse.press_1=dbus_buf[12];
+  39:Core/Src/Dbus.c **** 	rc_ctrl->mouse.press_r=dbus_buf[13];
+  40:Core/Src/Dbus.c **** 
+  41:Core/Src/Dbus.c **** 	rc_ctrl->v=dbus_buf[14]|(dbus_buf[15]<<8);
+  42:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch4=dbus_buf[16]|(dbus_buf[17]<<8);
+  43:Core/Src/Dbus.c **** 
+  44:Core/Src/Dbus.c **** 	//让它开始为0
+  45:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch0-=RC_CH_VALUE_OFFSET;
+  46:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch1-=RC_CH_VALUE_OFFSET;
+  47:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch2-=RC_CH_VALUE_OFFSET;
+  48:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3-=RC_CH_VALUE_OFFSET;
+  49:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch4-=RC_CH_VALUE_OFFSET;
+  50:Core/Src/Dbus.c **** 
+  51:Core/Src/Dbus.c **** 
+  52:Core/Src/Dbus.c **** 	RC_data_is_error();//用来进行出错处理
+  53:Core/Src/Dbus.c **** 
+  54:Core/Src/Dbus.c **** 
+  55:Core/Src/Dbus.c **** }
+  56:Core/Src/Dbus.c **** 
+  57:Core/Src/Dbus.c **** 
+  58:Core/Src/Dbus.c **** //遥控器数据出错处理
+  59:Core/Src/Dbus.c **** uint8_t RC_data_is_error(void)
+  60:Core/Src/Dbus.c **** {
+  61:Core/Src/Dbus.c **** 	//用goto语句，方便统一处理遥控器变量数据归0
+  62:Core/Src/Dbus.c **** 	if(RC_abs(rc_ctrl.rc.ch0)>RC_CHANNAL_ERROR_VALUE)
+  63:Core/Src/Dbus.c **** 	{
+  64:Core/Src/Dbus.c **** 		goto error;//goto表示跳转到error里面
+  65:Core/Src/Dbus.c **** 	}
+  66:Core/Src/Dbus.c **** 	if(RC_abs(rc_ctrl.rc.ch1)>RC_CHANNAL_ERROR_VALUE)
+  67:Core/Src/Dbus.c **** 	{
+  68:Core/Src/Dbus.c **** 		goto error;//goto表示跳转到error里面
+  69:Core/Src/Dbus.c **** 	}
+  70:Core/Src/Dbus.c **** 	if(RC_abs(rc_ctrl.rc.ch2)>RC_CHANNAL_ERROR_VALUE)
+  71:Core/Src/Dbus.c **** 	{
+  72:Core/Src/Dbus.c **** 		goto error;//goto表示跳转到error里面
+  73:Core/Src/Dbus.c **** 	}
+  74:Core/Src/Dbus.c **** 	if(RC_abs(rc_ctrl.rc.ch3)>RC_CHANNAL_ERROR_VALUE)
+  75:Core/Src/Dbus.c **** 	{
+  76:Core/Src/Dbus.c **** 		goto error;//goto表示跳转到error里面
+  77:Core/Src/Dbus.c **** 	}
+  78:Core/Src/Dbus.c **** //遥控器开关值  1-3，没有0
+  79:Core/Src/Dbus.c **** 	if(rc_ctrl.rc.s1==0)
+  80:Core/Src/Dbus.c **** 	{
+  81:Core/Src/Dbus.c **** 		goto error;
+  82:Core/Src/Dbus.c **** 	}
+  83:Core/Src/Dbus.c **** 	if(rc_ctrl.rc.s2==0)
+  84:Core/Src/Dbus.c **** 	{
+  85:Core/Src/Dbus.c **** 		goto error;
+  86:Core/Src/Dbus.c **** 	}
+  87:Core/Src/Dbus.c **** 	return 0;
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 3
+
+
+  88:Core/Src/Dbus.c **** 
+  89:Core/Src/Dbus.c **** 
+  90:Core/Src/Dbus.c **** 
+  91:Core/Src/Dbus.c **** 	error:rc_ctrl.rc.ch0=0;
+  92:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch1=0;
+  93:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch2=0;
+  94:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch3=0;
+  95:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch4=0;
+  96:Core/Src/Dbus.c **** 	rc_ctrl.rc.s1=RC_SW_DOWN;
+  97:Core/Src/Dbus.c **** 	rc_ctrl.rc.s2=RC_SW_DOWN;
+  98:Core/Src/Dbus.c **** 	rc_ctrl.mouse.x=0;
+  99:Core/Src/Dbus.c **** 	rc_ctrl.mouse.y=0;
+ 100:Core/Src/Dbus.c **** 	rc_ctrl.mouse.z=0;
+ 101:Core/Src/Dbus.c **** 	rc_ctrl.mouse.press_1=0;
+ 102:Core/Src/Dbus.c **** 	rc_ctrl.mouse.press_r=0;
+ 103:Core/Src/Dbus.c **** 	rc_ctrl.v=0;
+ 104:Core/Src/Dbus.c **** 	return 1;//返回值成功
+ 105:Core/Src/Dbus.c **** }
+ 106:Core/Src/Dbus.c **** 
+ 107:Core/Src/Dbus.c **** 
+ 108:Core/Src/Dbus.c **** static int16_t RC_abs(int16_t value)//取绝对值  //static 定义在文件内部，不能被其�
+ 109:Core/Src/Dbus.c **** {
+  29              		.loc 1 109 1 view -0
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33              		@ link register save eliminated.
+ 110:Core/Src/Dbus.c **** 	if(value>0)
+  34              		.loc 1 110 2 view .LVU1
+  35              		.loc 1 110 4 is_stmt 0 view .LVU2
+  36 0000 0028     		cmp	r0, #0
+  37              	.LVL1:
+  38              		.loc 1 110 4 view .LVU3
+  39 0002 00DD     		ble	.L3
+  40              	.L2:
+ 111:Core/Src/Dbus.c **** 	{
+ 112:Core/Src/Dbus.c **** 		return value;
+ 113:Core/Src/Dbus.c **** 	}
+ 114:Core/Src/Dbus.c **** 	else
+ 115:Core/Src/Dbus.c **** 	{
+ 116:Core/Src/Dbus.c **** 		return -value;
+ 117:Core/Src/Dbus.c **** 	}
+ 118:Core/Src/Dbus.c **** }
+  41              		.loc 1 118 1 view .LVU4
+  42 0004 7047     		bx	lr
+  43              	.L3:
+ 116:Core/Src/Dbus.c **** 	}
+  44              		.loc 1 116 3 is_stmt 1 view .LVU5
+ 116:Core/Src/Dbus.c **** 	}
+  45              		.loc 1 116 10 is_stmt 0 view .LVU6
+  46 0006 4042     		rsbs	r0, r0, #0
+  47 0008 00B2     		sxth	r0, r0
+  48 000a FBE7     		b	.L2
+  49              		.cfi_endproc
+  50              	.LFE136:
+  52              		.section	.text.RC_data_is_error,"ax",%progbits
+  53              		.align	1
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 4
+
+
+  54              		.global	RC_data_is_error
+  55              		.syntax unified
+  56              		.thumb
+  57              		.thumb_func
+  59              	RC_data_is_error:
+  60              	.LFB135:
+  60:Core/Src/Dbus.c **** 	//用goto语句，方便统一处理遥控器变量数据归0
+  61              		.loc 1 60 1 is_stmt 1 view -0
+  62              		.cfi_startproc
+  63              		@ args = 0, pretend = 0, frame = 0
+  64              		@ frame_needed = 0, uses_anonymous_args = 0
+  65 0000 08B5     		push	{r3, lr}
+  66              	.LCFI0:
+  67              		.cfi_def_cfa_offset 8
+  68              		.cfi_offset 3, -8
+  69              		.cfi_offset 14, -4
+  62:Core/Src/Dbus.c **** 	{
+  70              		.loc 1 62 2 view .LVU8
+  62:Core/Src/Dbus.c **** 	{
+  71              		.loc 1 62 5 is_stmt 0 view .LVU9
+  72 0002 1D4B     		ldr	r3, .L9
+  73 0004 B3F90000 		ldrsh	r0, [r3]
+  74 0008 FFF7FEFF 		bl	RC_abs
+  75              	.LVL2:
+  62:Core/Src/Dbus.c **** 	{
+  76              		.loc 1 62 4 view .LVU10
+  77 000c B0F52F7F 		cmp	r0, #700
+  78 0010 1FDC     		bgt	.L5
+  66:Core/Src/Dbus.c **** 	{
+  79              		.loc 1 66 2 is_stmt 1 view .LVU11
+  66:Core/Src/Dbus.c **** 	{
+  80              		.loc 1 66 5 is_stmt 0 view .LVU12
+  81 0012 194B     		ldr	r3, .L9
+  82 0014 B3F90200 		ldrsh	r0, [r3, #2]
+  83 0018 FFF7FEFF 		bl	RC_abs
+  84              	.LVL3:
+  66:Core/Src/Dbus.c **** 	{
+  85              		.loc 1 66 4 view .LVU13
+  86 001c B0F52F7F 		cmp	r0, #700
+  87 0020 17DC     		bgt	.L5
+  70:Core/Src/Dbus.c **** 	{
+  88              		.loc 1 70 2 is_stmt 1 view .LVU14
+  70:Core/Src/Dbus.c **** 	{
+  89              		.loc 1 70 5 is_stmt 0 view .LVU15
+  90 0022 154B     		ldr	r3, .L9
+  91 0024 B3F90400 		ldrsh	r0, [r3, #4]
+  92 0028 FFF7FEFF 		bl	RC_abs
+  93              	.LVL4:
+  70:Core/Src/Dbus.c **** 	{
+  94              		.loc 1 70 4 view .LVU16
+  95 002c B0F52F7F 		cmp	r0, #700
+  96 0030 0FDC     		bgt	.L5
+  74:Core/Src/Dbus.c **** 	{
+  97              		.loc 1 74 2 is_stmt 1 view .LVU17
+  74:Core/Src/Dbus.c **** 	{
+  98              		.loc 1 74 5 is_stmt 0 view .LVU18
+  99 0032 114B     		ldr	r3, .L9
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 5
+
+
+ 100 0034 B3F90600 		ldrsh	r0, [r3, #6]
+ 101 0038 FFF7FEFF 		bl	RC_abs
+ 102              	.LVL5:
+  74:Core/Src/Dbus.c **** 	{
+ 103              		.loc 1 74 4 view .LVU19
+ 104 003c B0F52F7F 		cmp	r0, #700
+ 105 0040 07DC     		bgt	.L5
+  79:Core/Src/Dbus.c **** 	{
+ 106              		.loc 1 79 2 is_stmt 1 view .LVU20
+  79:Core/Src/Dbus.c **** 	{
+ 107              		.loc 1 79 15 is_stmt 0 view .LVU21
+ 108 0042 0D4B     		ldr	r3, .L9
+ 109 0044 9B7A     		ldrb	r3, [r3, #10]	@ zero_extendqisi2
+  79:Core/Src/Dbus.c **** 	{
+ 110              		.loc 1 79 4 view .LVU22
+ 111 0046 23B1     		cbz	r3, .L5
+  83:Core/Src/Dbus.c **** 	{
+ 112              		.loc 1 83 2 is_stmt 1 view .LVU23
+  83:Core/Src/Dbus.c **** 	{
+ 113              		.loc 1 83 15 is_stmt 0 view .LVU24
+ 114 0048 0B4B     		ldr	r3, .L9
+ 115 004a DB7A     		ldrb	r3, [r3, #11]	@ zero_extendqisi2
+  83:Core/Src/Dbus.c **** 	{
+ 116              		.loc 1 83 4 view .LVU25
+ 117 004c 0BB1     		cbz	r3, .L5
+  87:Core/Src/Dbus.c **** 
+ 118              		.loc 1 87 9 view .LVU26
+ 119 004e 0020     		movs	r0, #0
+ 120 0050 10E0     		b	.L6
+ 121              	.L5:
+  91:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch1=0;
+ 122              		.loc 1 91 8 is_stmt 1 view .LVU27
+  91:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch1=0;
+ 123              		.loc 1 91 22 is_stmt 0 view .LVU28
+ 124 0052 094B     		ldr	r3, .L9
+ 125 0054 0022     		movs	r2, #0
+ 126 0056 1A80     		strh	r2, [r3]	@ movhi
+  92:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch2=0;
+ 127              		.loc 1 92 2 is_stmt 1 view .LVU29
+  92:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch2=0;
+ 128              		.loc 1 92 16 is_stmt 0 view .LVU30
+ 129 0058 5A80     		strh	r2, [r3, #2]	@ movhi
+  93:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch3=0;
+ 130              		.loc 1 93 2 is_stmt 1 view .LVU31
+  93:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch3=0;
+ 131              		.loc 1 93 16 is_stmt 0 view .LVU32
+ 132 005a 9A80     		strh	r2, [r3, #4]	@ movhi
+  94:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch4=0;
+ 133              		.loc 1 94 2 is_stmt 1 view .LVU33
+  94:Core/Src/Dbus.c **** 	rc_ctrl.rc.ch4=0;
+ 134              		.loc 1 94 16 is_stmt 0 view .LVU34
+ 135 005c DA80     		strh	r2, [r3, #6]	@ movhi
+  95:Core/Src/Dbus.c **** 	rc_ctrl.rc.s1=RC_SW_DOWN;
+ 136              		.loc 1 95 2 is_stmt 1 view .LVU35
+  95:Core/Src/Dbus.c **** 	rc_ctrl.rc.s1=RC_SW_DOWN;
+ 137              		.loc 1 95 16 is_stmt 0 view .LVU36
+ 138 005e 1A81     		strh	r2, [r3, #8]	@ movhi
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 6
+
+
+  96:Core/Src/Dbus.c **** 	rc_ctrl.rc.s2=RC_SW_DOWN;
+ 139              		.loc 1 96 2 is_stmt 1 view .LVU37
+  96:Core/Src/Dbus.c **** 	rc_ctrl.rc.s2=RC_SW_DOWN;
+ 140              		.loc 1 96 15 is_stmt 0 view .LVU38
+ 141 0060 0221     		movs	r1, #2
+ 142 0062 9972     		strb	r1, [r3, #10]
+  97:Core/Src/Dbus.c **** 	rc_ctrl.mouse.x=0;
+ 143              		.loc 1 97 2 is_stmt 1 view .LVU39
+  97:Core/Src/Dbus.c **** 	rc_ctrl.mouse.x=0;
+ 144              		.loc 1 97 15 is_stmt 0 view .LVU40
+ 145 0064 D972     		strb	r1, [r3, #11]
+  98:Core/Src/Dbus.c **** 	rc_ctrl.mouse.y=0;
+ 146              		.loc 1 98 2 is_stmt 1 view .LVU41
+  98:Core/Src/Dbus.c **** 	rc_ctrl.mouse.y=0;
+ 147              		.loc 1 98 17 is_stmt 0 view .LVU42
+ 148 0066 9A81     		strh	r2, [r3, #12]	@ movhi
+  99:Core/Src/Dbus.c **** 	rc_ctrl.mouse.z=0;
+ 149              		.loc 1 99 2 is_stmt 1 view .LVU43
+  99:Core/Src/Dbus.c **** 	rc_ctrl.mouse.z=0;
+ 150              		.loc 1 99 17 is_stmt 0 view .LVU44
+ 151 0068 DA81     		strh	r2, [r3, #14]	@ movhi
+ 100:Core/Src/Dbus.c **** 	rc_ctrl.mouse.press_1=0;
+ 152              		.loc 1 100 2 is_stmt 1 view .LVU45
+ 100:Core/Src/Dbus.c **** 	rc_ctrl.mouse.press_1=0;
+ 153              		.loc 1 100 17 is_stmt 0 view .LVU46
+ 154 006a 1A82     		strh	r2, [r3, #16]	@ movhi
+ 101:Core/Src/Dbus.c **** 	rc_ctrl.mouse.press_r=0;
+ 155              		.loc 1 101 2 is_stmt 1 view .LVU47
+ 101:Core/Src/Dbus.c **** 	rc_ctrl.mouse.press_r=0;
+ 156              		.loc 1 101 23 is_stmt 0 view .LVU48
+ 157 006c 9A74     		strb	r2, [r3, #18]
+ 102:Core/Src/Dbus.c **** 	rc_ctrl.v=0;
+ 158              		.loc 1 102 2 is_stmt 1 view .LVU49
+ 102:Core/Src/Dbus.c **** 	rc_ctrl.v=0;
+ 159              		.loc 1 102 23 is_stmt 0 view .LVU50
+ 160 006e DA74     		strb	r2, [r3, #19]
+ 103:Core/Src/Dbus.c **** 	return 1;//返回值成功
+ 161              		.loc 1 103 2 is_stmt 1 view .LVU51
+ 103:Core/Src/Dbus.c **** 	return 1;//返回值成功
+ 162              		.loc 1 103 11 is_stmt 0 view .LVU52
+ 163 0070 9A82     		strh	r2, [r3, #20]	@ movhi
+ 104:Core/Src/Dbus.c **** }
+ 164              		.loc 1 104 2 is_stmt 1 view .LVU53
+ 104:Core/Src/Dbus.c **** }
+ 165              		.loc 1 104 9 is_stmt 0 view .LVU54
+ 166 0072 0120     		movs	r0, #1
+ 167              	.L6:
+ 105:Core/Src/Dbus.c **** 
+ 168              		.loc 1 105 1 view .LVU55
+ 169 0074 08BD     		pop	{r3, pc}
+ 170              	.L10:
+ 171 0076 00BF     		.align	2
+ 172              	.L9:
+ 173 0078 00000000 		.word	rc_ctrl
+ 174              		.cfi_endproc
+ 175              	.LFE135:
+ 177              		.section	.text.dbus_to_rc,"ax",%progbits
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 7
+
+
+ 178              		.align	1
+ 179              		.global	dbus_to_rc
+ 180              		.syntax unified
+ 181              		.thumb
+ 182              		.thumb_func
+ 184              	dbus_to_rc:
+ 185              	.LVL6:
+ 186              	.LFB134:
+  21:Core/Src/Dbus.c **** 	if(dbus_buf==NULL||rc_ctrl==NULL)
+ 187              		.loc 1 21 1 is_stmt 1 view -0
+ 188              		.cfi_startproc
+ 189              		@ args = 0, pretend = 0, frame = 0
+ 190              		@ frame_needed = 0, uses_anonymous_args = 0
+  22:Core/Src/Dbus.c **** 	{
+ 191              		.loc 1 22 2 view .LVU57
+  22:Core/Src/Dbus.c **** 	{
+ 192              		.loc 1 22 4 is_stmt 0 view .LVU58
+ 193 0000 0028     		cmp	r0, #0
+ 194 0002 65D0     		beq	.L14
+  21:Core/Src/Dbus.c **** 	if(dbus_buf==NULL||rc_ctrl==NULL)
+ 195              		.loc 1 21 1 discriminator 1 view .LVU59
+ 196 0004 38B5     		push	{r3, r4, r5, lr}
+ 197              	.LCFI1:
+ 198              		.cfi_def_cfa_offset 16
+ 199              		.cfi_offset 3, -16
+ 200              		.cfi_offset 4, -12
+ 201              		.cfi_offset 5, -8
+ 202              		.cfi_offset 14, -4
+ 203 0006 0346     		mov	r3, r0
+  22:Core/Src/Dbus.c **** 	{
+ 204              		.loc 1 22 19 discriminator 1 view .LVU60
+ 205 0008 0029     		cmp	r1, #0
+ 206 000a 60D0     		beq	.L11
+  27:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch1=((dbus_buf[1]>>3)|(dbus_buf[2]<<5))&0x7ff;
+ 207              		.loc 1 27 2 is_stmt 1 view .LVU61
+  27:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch1=((dbus_buf[1]>>3)|(dbus_buf[2]<<5))&0x7ff;
+ 208              		.loc 1 27 27 is_stmt 0 view .LVU62
+ 209 000c 0478     		ldrb	r4, [r0]	@ zero_extendqisi2
+  27:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch1=((dbus_buf[1]>>3)|(dbus_buf[2]<<5))&0x7ff;
+ 210              		.loc 1 27 40 view .LVU63
+ 211 000e 4278     		ldrb	r2, [r0, #1]	@ zero_extendqisi2
+  27:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch1=((dbus_buf[1]>>3)|(dbus_buf[2]<<5))&0x7ff;
+ 212              		.loc 1 27 30 view .LVU64
+ 213 0010 44EA0224 		orr	r4, r4, r2, lsl #8
+  27:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch1=((dbus_buf[1]>>3)|(dbus_buf[2]<<5))&0x7ff;
+ 214              		.loc 1 27 48 view .LVU65
+ 215 0014 C4F30A04 		ubfx	r4, r4, #0, #11
+  27:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch1=((dbus_buf[1]>>3)|(dbus_buf[2]<<5))&0x7ff;
+ 216              		.loc 1 27 17 view .LVU66
+ 217 0018 0C80     		strh	r4, [r1]	@ movhi
+  28:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch2=((dbus_buf[2]>>6)|(dbus_buf[3]<<2)|(dbus_buf[4]<<10))&0x07ff;
+ 218              		.loc 1 28 2 is_stmt 1 view .LVU67
+  28:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch2=((dbus_buf[2]>>6)|(dbus_buf[3]<<2)|(dbus_buf[4]<<10))&0x07ff;
+ 219              		.loc 1 28 28 is_stmt 0 view .LVU68
+ 220 001a 90F801E0 		ldrb	lr, [r0, #1]	@ zero_extendqisi2
+  28:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch2=((dbus_buf[2]>>6)|(dbus_buf[3]<<2)|(dbus_buf[4]<<10))&0x07ff;
+ 221              		.loc 1 28 45 view .LVU69
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 8
+
+
+ 222 001e 8278     		ldrb	r2, [r0, #2]	@ zero_extendqisi2
+  28:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch2=((dbus_buf[2]>>6)|(dbus_buf[3]<<2)|(dbus_buf[4]<<10))&0x07ff;
+ 223              		.loc 1 28 35 view .LVU70
+ 224 0020 4FEADE0E 		lsr	lr, lr, #3
+ 225 0024 4EEA421E 		orr	lr, lr, r2, lsl #5
+  28:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch2=((dbus_buf[2]>>6)|(dbus_buf[3]<<2)|(dbus_buf[4]<<10))&0x07ff;
+ 226              		.loc 1 28 53 view .LVU71
+ 227 0028 CEF30A0E 		ubfx	lr, lr, #0, #11
+  28:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch2=((dbus_buf[2]>>6)|(dbus_buf[3]<<2)|(dbus_buf[4]<<10))&0x07ff;
+ 228              		.loc 1 28 17 view .LVU72
+ 229 002c A1F802E0 		strh	lr, [r1, #2]	@ movhi
+  29:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3=((dbus_buf[4]>>1)|(dbus_buf[5]<<7))&0x07ff;
+ 230              		.loc 1 29 2 is_stmt 1 view .LVU73
+  29:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3=((dbus_buf[4]>>1)|(dbus_buf[5]<<7))&0x07ff;
+ 231              		.loc 1 29 28 is_stmt 0 view .LVU74
+ 232 0030 8278     		ldrb	r2, [r0, #2]	@ zero_extendqisi2
+  29:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3=((dbus_buf[4]>>1)|(dbus_buf[5]<<7))&0x07ff;
+ 233              		.loc 1 29 45 view .LVU75
+ 234 0032 C078     		ldrb	r0, [r0, #3]	@ zero_extendqisi2
+ 235              	.LVL7:
+  29:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3=((dbus_buf[4]>>1)|(dbus_buf[5]<<7))&0x07ff;
+ 236              		.loc 1 29 35 view .LVU76
+ 237 0034 9209     		lsrs	r2, r2, #6
+ 238 0036 42EA8002 		orr	r2, r2, r0, lsl #2
+  29:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3=((dbus_buf[4]>>1)|(dbus_buf[5]<<7))&0x07ff;
+ 239              		.loc 1 29 62 view .LVU77
+ 240 003a 1879     		ldrb	r0, [r3, #4]	@ zero_extendqisi2
+  29:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3=((dbus_buf[4]>>1)|(dbus_buf[5]<<7))&0x07ff;
+ 241              		.loc 1 29 52 view .LVU78
+ 242 003c 42EA8022 		orr	r2, r2, r0, lsl #10
+  29:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3=((dbus_buf[4]>>1)|(dbus_buf[5]<<7))&0x07ff;
+ 243              		.loc 1 29 71 view .LVU79
+ 244 0040 C2F30A02 		ubfx	r2, r2, #0, #11
+  29:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3=((dbus_buf[4]>>1)|(dbus_buf[5]<<7))&0x07ff;
+ 245              		.loc 1 29 17 view .LVU80
+ 246 0044 8A80     		strh	r2, [r1, #4]	@ movhi
+  30:Core/Src/Dbus.c **** 
+ 247              		.loc 1 30 2 is_stmt 1 view .LVU81
+  30:Core/Src/Dbus.c **** 
+ 248              		.loc 1 30 28 is_stmt 0 view .LVU82
+ 249 0046 93F804C0 		ldrb	ip, [r3, #4]	@ zero_extendqisi2
+  30:Core/Src/Dbus.c **** 
+ 250              		.loc 1 30 45 view .LVU83
+ 251 004a 5879     		ldrb	r0, [r3, #5]	@ zero_extendqisi2
+  30:Core/Src/Dbus.c **** 
+ 252              		.loc 1 30 35 view .LVU84
+ 253 004c 4FEA5C0C 		lsr	ip, ip, #1
+ 254 0050 4CEAC01C 		orr	ip, ip, r0, lsl #7
+  30:Core/Src/Dbus.c **** 
+ 255              		.loc 1 30 53 view .LVU85
+ 256 0054 CCF30A0C 		ubfx	ip, ip, #0, #11
+  30:Core/Src/Dbus.c **** 
+ 257              		.loc 1 30 17 view .LVU86
+ 258 0058 A1F806C0 		strh	ip, [r1, #6]	@ movhi
+  32:Core/Src/Dbus.c **** 	rc_ctrl->rc.s2=((dbus_buf[5]>>4)&0x000C)>>2;
+ 259              		.loc 1 32 2 is_stmt 1 view .LVU87
+  32:Core/Src/Dbus.c **** 	rc_ctrl->rc.s2=((dbus_buf[5]>>4)&0x000C)>>2;
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 9
+
+
+ 260              		.loc 1 32 27 is_stmt 0 view .LVU88
+ 261 005c 5879     		ldrb	r0, [r3, #5]	@ zero_extendqisi2
+  32:Core/Src/Dbus.c **** 	rc_ctrl->rc.s2=((dbus_buf[5]>>4)&0x000C)>>2;
+ 262              		.loc 1 32 34 view .LVU89
+ 263 005e C0F30110 		ubfx	r0, r0, #4, #2
+  32:Core/Src/Dbus.c **** 	rc_ctrl->rc.s2=((dbus_buf[5]>>4)&0x000C)>>2;
+ 264              		.loc 1 32 16 view .LVU90
+ 265 0062 8872     		strb	r0, [r1, #10]
+  33:Core/Src/Dbus.c **** 
+ 266              		.loc 1 33 2 is_stmt 1 view .LVU91
+  33:Core/Src/Dbus.c **** 
+ 267              		.loc 1 33 27 is_stmt 0 view .LVU92
+ 268 0064 5879     		ldrb	r0, [r3, #5]	@ zero_extendqisi2
+  33:Core/Src/Dbus.c **** 
+ 269              		.loc 1 33 42 view .LVU93
+ 270 0066 8009     		lsrs	r0, r0, #6
+  33:Core/Src/Dbus.c **** 
+ 271              		.loc 1 33 16 view .LVU94
+ 272 0068 C872     		strb	r0, [r1, #11]
+  35:Core/Src/Dbus.c **** 	rc_ctrl->mouse.y=dbus_buf[8]|(dbus_buf[9]<<8);
+ 273              		.loc 1 35 2 is_stmt 1 view .LVU95
+  35:Core/Src/Dbus.c **** 	rc_ctrl->mouse.y=dbus_buf[8]|(dbus_buf[9]<<8);
+ 274              		.loc 1 35 27 is_stmt 0 view .LVU96
+ 275 006a 9879     		ldrb	r0, [r3, #6]	@ zero_extendqisi2
+  35:Core/Src/Dbus.c **** 	rc_ctrl->mouse.y=dbus_buf[8]|(dbus_buf[9]<<8);
+ 276              		.loc 1 35 40 view .LVU97
+ 277 006c DD79     		ldrb	r5, [r3, #7]	@ zero_extendqisi2
+  35:Core/Src/Dbus.c **** 	rc_ctrl->mouse.y=dbus_buf[8]|(dbus_buf[9]<<8);
+ 278              		.loc 1 35 30 view .LVU98
+ 279 006e 40EA0520 		orr	r0, r0, r5, lsl #8
+  35:Core/Src/Dbus.c **** 	rc_ctrl->mouse.y=dbus_buf[8]|(dbus_buf[9]<<8);
+ 280              		.loc 1 35 18 view .LVU99
+ 281 0072 8881     		strh	r0, [r1, #12]	@ movhi
+  36:Core/Src/Dbus.c **** 	rc_ctrl->mouse.z=dbus_buf[10]|(dbus_buf[11]<<8);
+ 282              		.loc 1 36 2 is_stmt 1 view .LVU100
+  36:Core/Src/Dbus.c **** 	rc_ctrl->mouse.z=dbus_buf[10]|(dbus_buf[11]<<8);
+ 283              		.loc 1 36 27 is_stmt 0 view .LVU101
+ 284 0074 187A     		ldrb	r0, [r3, #8]	@ zero_extendqisi2
+  36:Core/Src/Dbus.c **** 	rc_ctrl->mouse.z=dbus_buf[10]|(dbus_buf[11]<<8);
+ 285              		.loc 1 36 40 view .LVU102
+ 286 0076 5D7A     		ldrb	r5, [r3, #9]	@ zero_extendqisi2
+  36:Core/Src/Dbus.c **** 	rc_ctrl->mouse.z=dbus_buf[10]|(dbus_buf[11]<<8);
+ 287              		.loc 1 36 30 view .LVU103
+ 288 0078 40EA0520 		orr	r0, r0, r5, lsl #8
+  36:Core/Src/Dbus.c **** 	rc_ctrl->mouse.z=dbus_buf[10]|(dbus_buf[11]<<8);
+ 289              		.loc 1 36 18 view .LVU104
+ 290 007c C881     		strh	r0, [r1, #14]	@ movhi
+  37:Core/Src/Dbus.c **** 	rc_ctrl->mouse.press_1=dbus_buf[12];
+ 291              		.loc 1 37 2 is_stmt 1 view .LVU105
+  37:Core/Src/Dbus.c **** 	rc_ctrl->mouse.press_1=dbus_buf[12];
+ 292              		.loc 1 37 27 is_stmt 0 view .LVU106
+ 293 007e 987A     		ldrb	r0, [r3, #10]	@ zero_extendqisi2
+  37:Core/Src/Dbus.c **** 	rc_ctrl->mouse.press_1=dbus_buf[12];
+ 294              		.loc 1 37 41 view .LVU107
+ 295 0080 DD7A     		ldrb	r5, [r3, #11]	@ zero_extendqisi2
+  37:Core/Src/Dbus.c **** 	rc_ctrl->mouse.press_1=dbus_buf[12];
+ 296              		.loc 1 37 31 view .LVU108
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 10
+
+
+ 297 0082 40EA0520 		orr	r0, r0, r5, lsl #8
+  37:Core/Src/Dbus.c **** 	rc_ctrl->mouse.press_1=dbus_buf[12];
+ 298              		.loc 1 37 18 view .LVU109
+ 299 0086 0882     		strh	r0, [r1, #16]	@ movhi
+  38:Core/Src/Dbus.c **** 	rc_ctrl->mouse.press_r=dbus_buf[13];
+ 300              		.loc 1 38 2 is_stmt 1 view .LVU110
+  38:Core/Src/Dbus.c **** 	rc_ctrl->mouse.press_r=dbus_buf[13];
+ 301              		.loc 1 38 33 is_stmt 0 view .LVU111
+ 302 0088 187B     		ldrb	r0, [r3, #12]	@ zero_extendqisi2
+  38:Core/Src/Dbus.c **** 	rc_ctrl->mouse.press_r=dbus_buf[13];
+ 303              		.loc 1 38 24 view .LVU112
+ 304 008a 8874     		strb	r0, [r1, #18]
+  39:Core/Src/Dbus.c **** 
+ 305              		.loc 1 39 2 is_stmt 1 view .LVU113
+  39:Core/Src/Dbus.c **** 
+ 306              		.loc 1 39 33 is_stmt 0 view .LVU114
+ 307 008c 587B     		ldrb	r0, [r3, #13]	@ zero_extendqisi2
+  39:Core/Src/Dbus.c **** 
+ 308              		.loc 1 39 24 view .LVU115
+ 309 008e C874     		strb	r0, [r1, #19]
+  41:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch4=dbus_buf[16]|(dbus_buf[17]<<8);
+ 310              		.loc 1 41 2 is_stmt 1 view .LVU116
+  41:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch4=dbus_buf[16]|(dbus_buf[17]<<8);
+ 311              		.loc 1 41 21 is_stmt 0 view .LVU117
+ 312 0090 987B     		ldrb	r0, [r3, #14]	@ zero_extendqisi2
+  41:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch4=dbus_buf[16]|(dbus_buf[17]<<8);
+ 313              		.loc 1 41 35 view .LVU118
+ 314 0092 DD7B     		ldrb	r5, [r3, #15]	@ zero_extendqisi2
+  41:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch4=dbus_buf[16]|(dbus_buf[17]<<8);
+ 315              		.loc 1 41 25 view .LVU119
+ 316 0094 40EA0520 		orr	r0, r0, r5, lsl #8
+  41:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch4=dbus_buf[16]|(dbus_buf[17]<<8);
+ 317              		.loc 1 41 12 view .LVU120
+ 318 0098 8882     		strh	r0, [r1, #20]	@ movhi
+  42:Core/Src/Dbus.c **** 
+ 319              		.loc 1 42 2 is_stmt 1 view .LVU121
+  42:Core/Src/Dbus.c **** 
+ 320              		.loc 1 42 26 is_stmt 0 view .LVU122
+ 321 009a 187C     		ldrb	r0, [r3, #16]	@ zero_extendqisi2
+  42:Core/Src/Dbus.c **** 
+ 322              		.loc 1 42 40 view .LVU123
+ 323 009c 5B7C     		ldrb	r3, [r3, #17]	@ zero_extendqisi2
+ 324              	.LVL8:
+  42:Core/Src/Dbus.c **** 
+ 325              		.loc 1 42 30 view .LVU124
+ 326 009e 40EA0323 		orr	r3, r0, r3, lsl #8
+ 327 00a2 1BB2     		sxth	r3, r3
+  42:Core/Src/Dbus.c **** 
+ 328              		.loc 1 42 17 view .LVU125
+ 329 00a4 0B81     		strh	r3, [r1, #8]	@ movhi
+  45:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch1-=RC_CH_VALUE_OFFSET;
+ 330              		.loc 1 45 2 is_stmt 1 view .LVU126
+  45:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch1-=RC_CH_VALUE_OFFSET;
+ 331              		.loc 1 45 17 is_stmt 0 view .LVU127
+ 332 00a6 A4F58064 		sub	r4, r4, #1024
+ 333 00aa 0C80     		strh	r4, [r1]	@ movhi
+  46:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch2-=RC_CH_VALUE_OFFSET;
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 11
+
+
+ 334              		.loc 1 46 2 is_stmt 1 view .LVU128
+  46:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch2-=RC_CH_VALUE_OFFSET;
+ 335              		.loc 1 46 17 is_stmt 0 view .LVU129
+ 336 00ac AEF5806E 		sub	lr, lr, #1024
+ 337 00b0 A1F802E0 		strh	lr, [r1, #2]	@ movhi
+  47:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3-=RC_CH_VALUE_OFFSET;
+ 338              		.loc 1 47 2 is_stmt 1 view .LVU130
+  47:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch3-=RC_CH_VALUE_OFFSET;
+ 339              		.loc 1 47 17 is_stmt 0 view .LVU131
+ 340 00b4 A2F58062 		sub	r2, r2, #1024
+ 341 00b8 8A80     		strh	r2, [r1, #4]	@ movhi
+  48:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch4-=RC_CH_VALUE_OFFSET;
+ 342              		.loc 1 48 2 is_stmt 1 view .LVU132
+  48:Core/Src/Dbus.c **** 	rc_ctrl->rc.ch4-=RC_CH_VALUE_OFFSET;
+ 343              		.loc 1 48 17 is_stmt 0 view .LVU133
+ 344 00ba ACF5806C 		sub	ip, ip, #1024
+ 345 00be A1F806C0 		strh	ip, [r1, #6]	@ movhi
+  49:Core/Src/Dbus.c **** 
+ 346              		.loc 1 49 2 is_stmt 1 view .LVU134
+  49:Core/Src/Dbus.c **** 
+ 347              		.loc 1 49 13 is_stmt 0 view .LVU135
+ 348 00c2 9BB2     		uxth	r3, r3
+  49:Core/Src/Dbus.c **** 
+ 349              		.loc 1 49 17 view .LVU136
+ 350 00c4 A3F58063 		sub	r3, r3, #1024
+ 351 00c8 0B81     		strh	r3, [r1, #8]	@ movhi
+  52:Core/Src/Dbus.c **** 
+ 352              		.loc 1 52 2 is_stmt 1 view .LVU137
+ 353 00ca FFF7FEFF 		bl	RC_data_is_error
+ 354              	.LVL9:
+ 355              	.L11:
+  55:Core/Src/Dbus.c **** 
+ 356              		.loc 1 55 1 is_stmt 0 view .LVU138
+ 357 00ce 38BD     		pop	{r3, r4, r5, pc}
+ 358              	.LVL10:
+ 359              	.L14:
+ 360              	.LCFI2:
+ 361              		.cfi_def_cfa_offset 0
+ 362              		.cfi_restore 3
+ 363              		.cfi_restore 4
+ 364              		.cfi_restore 5
+ 365              		.cfi_restore 14
+  55:Core/Src/Dbus.c **** 
+ 366              		.loc 1 55 1 view .LVU139
+ 367 00d0 7047     		bx	lr
+ 368              		.cfi_endproc
+ 369              	.LFE134:
+ 371              		.section	.text.uart_dma_init,"ax",%progbits
+ 372              		.align	1
+ 373              		.global	uart_dma_init
+ 374              		.syntax unified
+ 375              		.thumb
+ 376              		.thumb_func
+ 378              	uart_dma_init:
+ 379              	.LFB137:
+ 119:Core/Src/Dbus.c **** 
+ 120:Core/Src/Dbus.c **** 
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 12
+
+
+ 121:Core/Src/Dbus.c **** HAL_StatusTypeDef c;
+ 122:Core/Src/Dbus.c **** void uart_dma_init()
+ 123:Core/Src/Dbus.c **** {
+ 380              		.loc 1 123 1 is_stmt 1 view -0
+ 381              		.cfi_startproc
+ 382              		@ args = 0, pretend = 0, frame = 0
+ 383              		@ frame_needed = 0, uses_anonymous_args = 0
+ 384 0000 38B5     		push	{r3, r4, r5, lr}
+ 385              	.LCFI3:
+ 386              		.cfi_def_cfa_offset 16
+ 387              		.cfi_offset 3, -16
+ 388              		.cfi_offset 4, -12
+ 389              		.cfi_offset 5, -8
+ 390              		.cfi_offset 14, -4
+ 124:Core/Src/Dbus.c **** 	memset(DBUS_rx_buf,0,36);//将前36个字节清零
+ 391              		.loc 1 124 2 view .LVU141
+ 392 0002 074C     		ldr	r4, .L19
+ 393 0004 2425     		movs	r5, #36
+ 394 0006 2A46     		mov	r2, r5
+ 395 0008 0021     		movs	r1, #0
+ 396 000a 2046     		mov	r0, r4
+ 397 000c FFF7FEFF 		bl	memset
+ 398              	.LVL11:
+ 125:Core/Src/Dbus.c **** 	c=HAL_UARTEx_ReceiveToIdle_DMA(&huart3, (uint8_t*)&DBUS_rx_buf[0],36);
+ 399              		.loc 1 125 2 view .LVU142
+ 400              		.loc 1 125 4 is_stmt 0 view .LVU143
+ 401 0010 2A46     		mov	r2, r5
+ 402 0012 2146     		mov	r1, r4
+ 403 0014 0348     		ldr	r0, .L19+4
+ 404 0016 FFF7FEFF 		bl	HAL_UARTEx_ReceiveToIdle_DMA
+ 405              	.LVL12:
+ 406              		.loc 1 125 3 view .LVU144
+ 407 001a 034B     		ldr	r3, .L19+8
+ 408 001c 1870     		strb	r0, [r3]
+ 126:Core/Src/Dbus.c **** }
+ 409              		.loc 1 126 1 view .LVU145
+ 410 001e 38BD     		pop	{r3, r4, r5, pc}
+ 411              	.L20:
+ 412              		.align	2
+ 413              	.L19:
+ 414 0020 00000000 		.word	DBUS_rx_buf
+ 415 0024 00000000 		.word	huart3
+ 416 0028 00000000 		.word	c
+ 417              		.cfi_endproc
+ 418              	.LFE137:
+ 420              		.global	c
+ 421              		.section	.bss.c,"aw",%nobits
+ 424              	c:
+ 425 0000 00       		.space	1
+ 426              		.global	DR16_Received
+ 427              		.section	.bss.DR16_Received,"aw",%nobits
+ 428              		.align	1
+ 431              	DR16_Received:
+ 432 0000 0000     		.space	2
+ 433              		.global	rc_ctrl
+ 434              		.section	.bss.rc_ctrl,"aw",%nobits
+ 435              		.align	2
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 13
+
+
+ 438              	rc_ctrl:
+ 439 0000 00000000 		.space	22
+ 439      00000000 
+ 439      00000000 
+ 439      00000000 
+ 439      00000000 
+ 440              		.text
+ 441              	.Letext0:
+ 442              		.file 2 "c:\\msys64\\mingw64\\arm-none-eabi\\include\\machine\\_default_types.h"
+ 443              		.file 3 "c:\\msys64\\mingw64\\arm-none-eabi\\include\\sys\\_stdint.h"
+ 444              		.file 4 "Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f407xx.h"
+ 445              		.file 5 "c:\\msys64\\mingw64\\lib\\gcc\\arm-none-eabi\\12.2.0\\include\\stddef.h"
+ 446              		.file 6 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h"
+ 447              		.file 7 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h"
+ 448              		.file 8 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h"
+ 449              		.file 9 "Core/Inc/Dbus.h"
+ 450              		.file 10 "c:\\msys64\\mingw64\\arm-none-eabi\\include\\string.h"
+ 451              		.file 11 "<built-in>"
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s 			page 14
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 Dbus.c
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:21     .text.RC_abs:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:26     .text.RC_abs:00000000 RC_abs
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:53     .text.RC_data_is_error:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:59     .text.RC_data_is_error:00000000 RC_data_is_error
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:173    .text.RC_data_is_error:00000078 $d
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:438    .bss.rc_ctrl:00000000 rc_ctrl
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:178    .text.dbus_to_rc:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:184    .text.dbus_to_rc:00000000 dbus_to_rc
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:372    .text.uart_dma_init:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:378    .text.uart_dma_init:00000000 uart_dma_init
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:414    .text.uart_dma_init:00000020 $d
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:424    .bss.c:00000000 c
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:425    .bss.c:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:431    .bss.DR16_Received:00000000 DR16_Received
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:428    .bss.DR16_Received:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\cceuvH4E.s:435    .bss.rc_ctrl:00000000 $d
+
+UNDEFINED SYMBOLS
+memset
+HAL_UARTEx_ReceiveToIdle_DMA
+DBUS_rx_buf
+huart3

@@ -1,0 +1,4 @@
+../Core/Src/Dbus.c:20:6:dbus_to_rc	16	static
+../Core/Src/Dbus.c:59:9:RC_data_is_error	8	static
+../Core/Src/Dbus.c:108:16:RC_abs	16	static
+../Core/Src/Dbus.c:122:6:uart_dma_init	8	static

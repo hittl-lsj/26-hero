@@ -1,0 +1,1112 @@
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"bsp_can.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "Core/Src/bsp_can.c"
+  20              		.section	.text.can_Init,"ax",%progbits
+  21              		.align	1
+  22              		.global	can_Init
+  23              		.syntax unified
+  24              		.thumb
+  25              		.thumb_func
+  27              	can_Init:
+  28              	.LVL0:
+  29              	.LFB134:
+   1:Core/Src/bsp_can.c **** #include "bsp_can.h"
+   2:Core/Src/bsp_can.c **** #include "pid.h"
+   3:Core/Src/bsp_can.c **** #include "can.h"
+   4:Core/Src/bsp_can.c **** #include "gpio.h"
+   5:Core/Src/bsp_can.c **** //定义can数据缓存
+   6:Core/Src/bsp_can.c **** uint8_t Data[8]={0};
+   7:Core/Src/bsp_can.c **** Motor_t myMotor;
+   8:Core/Src/bsp_can.c **** int32_t current_angle[6]={0};
+   9:Core/Src/bsp_can.c **** int32_t Last_angle[6]={0};
+  10:Core/Src/bsp_can.c **** int32_t err[6]={0};
+  11:Core/Src/bsp_can.c **** int32_t a[6];
+  12:Core/Src/bsp_can.c **** 
+  13:Core/Src/bsp_can.c **** extern f;
+  14:Core/Src/bsp_can.c **** //初始化can
+  15:Core/Src/bsp_can.c **** void can_Init(CAN_HandleTypeDef*hcan)
+  16:Core/Src/bsp_can.c **** {
+  30              		.loc 1 16 1 view -0
+  31              		.cfi_startproc
+  32              		@ args = 0, pretend = 0, frame = 40
+  33              		@ frame_needed = 0, uses_anonymous_args = 0
+  34              		.loc 1 16 1 is_stmt 0 view .LVU1
+  35 0000 00B5     		push	{lr}
+  36              	.LCFI0:
+  37              		.cfi_def_cfa_offset 4
+  38              		.cfi_offset 14, -4
+  39 0002 8BB0     		sub	sp, sp, #44
+  40              	.LCFI1:
+  41              		.cfi_def_cfa_offset 48
+  17:Core/Src/bsp_can.c **** 	//配置can的过滤器
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 2
+
+
+  18:Core/Src/bsp_can.c **** 		  CAN_FilterTypeDef  can_filter;
+  42              		.loc 1 18 5 is_stmt 1 view .LVU2
+  19:Core/Src/bsp_can.c **** 		  can_filter.FilterBank = 0;                       // filter 0
+  43              		.loc 1 19 5 view .LVU3
+  44              		.loc 1 19 27 is_stmt 0 view .LVU4
+  45 0004 0023     		movs	r3, #0
+  46 0006 0593     		str	r3, [sp, #20]
+  20:Core/Src/bsp_can.c **** 		  can_filter.FilterMode =  CAN_FILTERMODE_IDMASK;  // mask mode
+  47              		.loc 1 20 5 is_stmt 1 view .LVU5
+  48              		.loc 1 20 27 is_stmt 0 view .LVU6
+  49 0008 0693     		str	r3, [sp, #24]
+  21:Core/Src/bsp_can.c **** 		  can_filter.FilterScale = CAN_FILTERSCALE_32BIT;
+  50              		.loc 1 21 5 is_stmt 1 view .LVU7
+  51              		.loc 1 21 28 is_stmt 0 view .LVU8
+  52 000a 0122     		movs	r2, #1
+  53 000c 0792     		str	r2, [sp, #28]
+  22:Core/Src/bsp_can.c **** 		  can_filter.FilterIdHigh = 0;
+  54              		.loc 1 22 5 is_stmt 1 view .LVU9
+  55              		.loc 1 22 29 is_stmt 0 view .LVU10
+  56 000e 0093     		str	r3, [sp]
+  23:Core/Src/bsp_can.c **** 		  can_filter.FilterIdLow  = 0;
+  57              		.loc 1 23 5 is_stmt 1 view .LVU11
+  58              		.loc 1 23 29 is_stmt 0 view .LVU12
+  59 0010 0193     		str	r3, [sp, #4]
+  24:Core/Src/bsp_can.c **** 		  can_filter.FilterMaskIdHigh = 0;
+  60              		.loc 1 24 5 is_stmt 1 view .LVU13
+  61              		.loc 1 24 33 is_stmt 0 view .LVU14
+  62 0012 0293     		str	r3, [sp, #8]
+  25:Core/Src/bsp_can.c **** 		  can_filter.FilterMaskIdLow  = 0;                // set mask 0 to receive all can id
+  63              		.loc 1 25 5 is_stmt 1 view .LVU15
+  64              		.loc 1 25 33 is_stmt 0 view .LVU16
+  65 0014 0393     		str	r3, [sp, #12]
+  26:Core/Src/bsp_can.c **** 		  can_filter.FilterFIFOAssignment = CAN_RX_FIFO0; // assign to fifo0
+  66              		.loc 1 26 5 is_stmt 1 view .LVU17
+  67              		.loc 1 26 37 is_stmt 0 view .LVU18
+  68 0016 0493     		str	r3, [sp, #16]
+  27:Core/Src/bsp_can.c **** 		  can_filter.FilterActivation = ENABLE;           // enable can filter
+  69              		.loc 1 27 5 is_stmt 1 view .LVU19
+  70              		.loc 1 27 33 is_stmt 0 view .LVU20
+  71 0018 0892     		str	r2, [sp, #32]
+  28:Core/Src/bsp_can.c **** 		  can_filter.SlaveStartFilterBank  = 14;          // only meaningful in dual can mode
+  72              		.loc 1 28 5 is_stmt 1 view .LVU21
+  73              		.loc 1 28 38 is_stmt 0 view .LVU22
+  74 001a 0E23     		movs	r3, #14
+  75 001c 0993     		str	r3, [sp, #36]
+  29:Core/Src/bsp_can.c **** 
+  30:Core/Src/bsp_can.c **** 		  HAL_CAN_ConfigFilter(hcan, &can_filter);        // init can filter
+  76              		.loc 1 30 5 is_stmt 1 view .LVU23
+  77 001e 6946     		mov	r1, sp
+  78 0020 FFF7FEFF 		bl	HAL_CAN_ConfigFilter
+  79              	.LVL1:
+  31:Core/Src/bsp_can.c **** 
+  32:Core/Src/bsp_can.c **** 
+  33:Core/Src/bsp_can.c **** 	HAL_CAN_ActivateNotification(&hcan1,CAN_IT_RX_FIFO0_MSG_PENDING);//开启在fifo0中的接收中�
+  80              		.loc 1 33 2 view .LVU24
+  81 0024 0221     		movs	r1, #2
+  82 0026 0348     		ldr	r0, .L3
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 3
+
+
+  83 0028 FFF7FEFF 		bl	HAL_CAN_ActivateNotification
+  84              	.LVL2:
+  34:Core/Src/bsp_can.c **** 
+  35:Core/Src/bsp_can.c **** 
+  36:Core/Src/bsp_can.c **** }
+  85              		.loc 1 36 1 is_stmt 0 view .LVU25
+  86 002c 0BB0     		add	sp, sp, #44
+  87              	.LCFI2:
+  88              		.cfi_def_cfa_offset 4
+  89              		@ sp needed
+  90 002e 5DF804FB 		ldr	pc, [sp], #4
+  91              	.L4:
+  92 0032 00BF     		.align	2
+  93              	.L3:
+  94 0034 00000000 		.word	hcan1
+  95              		.cfi_endproc
+  96              	.LFE134:
+  98              		.section	.text.boxSend1,"ax",%progbits
+  99              		.align	1
+ 100              		.global	boxSend1
+ 101              		.syntax unified
+ 102              		.thumb
+ 103              		.thumb_func
+ 105              	boxSend1:
+ 106              	.LVL3:
+ 107              	.LFB135:
+  37:Core/Src/bsp_can.c **** //将电压控制指令发送到can总线上
+  38:Core/Src/bsp_can.c **** void boxSend1(int16_t I1,int16_t I2,int16_t I3,int16_t I4)//电压控制1，范围在-25000到25000
+  39:Core/Src/bsp_can.c **** {
+ 108              		.loc 1 39 1 is_stmt 1 view -0
+ 109              		.cfi_startproc
+ 110              		@ args = 0, pretend = 0, frame = 0
+ 111              		@ frame_needed = 0, uses_anonymous_args = 0
+ 112              		.loc 1 39 1 is_stmt 0 view .LVU27
+ 113 0000 10B5     		push	{r4, lr}
+ 114              	.LCFI3:
+ 115              		.cfi_def_cfa_offset 8
+ 116              		.cfi_offset 4, -8
+ 117              		.cfi_offset 14, -4
+ 118 0002 8E46     		mov	lr, r1
+ 119 0004 9446     		mov	ip, r2
+  40:Core/Src/bsp_can.c **** 	static CAN_TxHeaderTypeDef txheader;//创建发送报文结构体
+ 120              		.loc 1 40 2 is_stmt 1 view .LVU28
+  41:Core/Src/bsp_can.c ****  	txheader.DLC=8;
+ 121              		.loc 1 41 3 view .LVU29
+ 122              		.loc 1 41 15 is_stmt 0 view .LVU30
+ 123 0006 1049     		ldr	r1, .L7
+ 124              	.LVL4:
+ 125              		.loc 1 41 15 view .LVU31
+ 126 0008 0822     		movs	r2, #8
+ 127              	.LVL5:
+ 128              		.loc 1 41 15 view .LVU32
+ 129 000a 0A61     		str	r2, [r1, #16]
+  42:Core/Src/bsp_can.c **** 	txheader.IDE=CAN_ID_STD;
+ 130              		.loc 1 42 2 is_stmt 1 view .LVU33
+ 131              		.loc 1 42 14 is_stmt 0 view .LVU34
+ 132 000c 0022     		movs	r2, #0
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 4
+
+
+ 133 000e 8A60     		str	r2, [r1, #8]
+  43:Core/Src/bsp_can.c **** 	txheader.RTR=CAN_RTR_DATA;
+ 134              		.loc 1 43 2 is_stmt 1 view .LVU35
+ 135              		.loc 1 43 14 is_stmt 0 view .LVU36
+ 136 0010 CA60     		str	r2, [r1, #12]
+  44:Core/Src/bsp_can.c **** 	txheader.StdId=0x200;//电流控制-16384到16384
+ 137              		.loc 1 44 2 is_stmt 1 view .LVU37
+ 138              		.loc 1 44 16 is_stmt 0 view .LVU38
+ 139 0012 4FF40072 		mov	r2, #512
+ 140 0016 0A60     		str	r2, [r1]
+  45:Core/Src/bsp_can.c **** 	Data[0]=(uint8_t)(I1>>8);//高八位
+ 141              		.loc 1 45 2 is_stmt 1 view .LVU39
+ 142              		.loc 1 45 10 is_stmt 0 view .LVU40
+ 143 0018 C0F30724 		ubfx	r4, r0, #8, #8
+ 144              		.loc 1 45 9 view .LVU41
+ 145 001c 0B4A     		ldr	r2, .L7+4
+ 146 001e 1470     		strb	r4, [r2]
+  46:Core/Src/bsp_can.c **** 	Data[1]=(uint8_t)I1;//低八位
+ 147              		.loc 1 46 2 is_stmt 1 view .LVU42
+ 148              		.loc 1 46 9 is_stmt 0 view .LVU43
+ 149 0020 5070     		strb	r0, [r2, #1]
+  47:Core/Src/bsp_can.c **** 
+  48:Core/Src/bsp_can.c **** 	Data[2]=(uint8_t)(I2>>8);
+ 150              		.loc 1 48 2 is_stmt 1 view .LVU44
+ 151              		.loc 1 48 10 is_stmt 0 view .LVU45
+ 152 0022 CEF30720 		ubfx	r0, lr, #8, #8
+ 153              	.LVL6:
+ 154              		.loc 1 48 9 view .LVU46
+ 155 0026 9070     		strb	r0, [r2, #2]
+  49:Core/Src/bsp_can.c **** 	Data[3]=(uint8_t)I2;
+ 156              		.loc 1 49 2 is_stmt 1 view .LVU47
+ 157              		.loc 1 49 9 is_stmt 0 view .LVU48
+ 158 0028 82F803E0 		strb	lr, [r2, #3]
+  50:Core/Src/bsp_can.c **** 
+  51:Core/Src/bsp_can.c **** 	Data[4]=(uint8_t)(I3>>8);
+ 159              		.loc 1 51 2 is_stmt 1 view .LVU49
+ 160              		.loc 1 51 10 is_stmt 0 view .LVU50
+ 161 002c CCF30720 		ubfx	r0, ip, #8, #8
+ 162              		.loc 1 51 9 view .LVU51
+ 163 0030 1071     		strb	r0, [r2, #4]
+  52:Core/Src/bsp_can.c **** 	Data[5]=(uint8_t)I3;
+ 164              		.loc 1 52 2 is_stmt 1 view .LVU52
+ 165              		.loc 1 52 9 is_stmt 0 view .LVU53
+ 166 0032 82F805C0 		strb	ip, [r2, #5]
+  53:Core/Src/bsp_can.c **** 
+  54:Core/Src/bsp_can.c **** 	Data[6]=(uint8_t)(I4>>8);
+ 167              		.loc 1 54 2 is_stmt 1 view .LVU54
+ 168              		.loc 1 54 10 is_stmt 0 view .LVU55
+ 169 0036 C3F30720 		ubfx	r0, r3, #8, #8
+ 170              		.loc 1 54 9 view .LVU56
+ 171 003a 9071     		strb	r0, [r2, #6]
+  55:Core/Src/bsp_can.c **** 	Data[7]=(uint8_t)I4;
+ 172              		.loc 1 55 2 is_stmt 1 view .LVU57
+ 173              		.loc 1 55 9 is_stmt 0 view .LVU58
+ 174 003c D371     		strb	r3, [r2, #7]
+  56:Core/Src/bsp_can.c **** 
+  57:Core/Src/bsp_can.c **** 	HAL_CAN_AddTxMessage(&hcan1,&txheader,Data,(uint32_t*)CAN_TX_MAILBOX0);
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 5
+
+
+ 175              		.loc 1 57 2 is_stmt 1 view .LVU59
+ 176 003e 0123     		movs	r3, #1
+ 177              	.LVL7:
+ 178              		.loc 1 57 2 is_stmt 0 view .LVU60
+ 179 0040 0348     		ldr	r0, .L7+8
+ 180 0042 FFF7FEFF 		bl	HAL_CAN_AddTxMessage
+ 181              	.LVL8:
+  58:Core/Src/bsp_can.c **** }
+ 182              		.loc 1 58 1 view .LVU61
+ 183 0046 10BD     		pop	{r4, pc}
+ 184              	.L8:
+ 185              		.align	2
+ 186              	.L7:
+ 187 0048 00000000 		.word	txheader.2
+ 188 004c 00000000 		.word	Data
+ 189 0050 00000000 		.word	hcan1
+ 190              		.cfi_endproc
+ 191              	.LFE135:
+ 193              		.section	.text.boxSend2,"ax",%progbits
+ 194              		.align	1
+ 195              		.global	boxSend2
+ 196              		.syntax unified
+ 197              		.thumb
+ 198              		.thumb_func
+ 200              	boxSend2:
+ 201              	.LVL9:
+ 202              	.LFB136:
+  59:Core/Src/bsp_can.c **** void boxSend2(int16_t I1,int16_t I2,int16_t I3,int16_t I4)//电压控制1，范围在-25000到25000
+  60:Core/Src/bsp_can.c **** {
+ 203              		.loc 1 60 1 is_stmt 1 view -0
+ 204              		.cfi_startproc
+ 205              		@ args = 0, pretend = 0, frame = 0
+ 206              		@ frame_needed = 0, uses_anonymous_args = 0
+ 207              		.loc 1 60 1 is_stmt 0 view .LVU63
+ 208 0000 10B5     		push	{r4, lr}
+ 209              	.LCFI4:
+ 210              		.cfi_def_cfa_offset 8
+ 211              		.cfi_offset 4, -8
+ 212              		.cfi_offset 14, -4
+ 213 0002 8E46     		mov	lr, r1
+ 214 0004 9446     		mov	ip, r2
+  61:Core/Src/bsp_can.c **** 	static CAN_TxHeaderTypeDef txheader;//创建发送报文结构体
+ 215              		.loc 1 61 2 is_stmt 1 view .LVU64
+  62:Core/Src/bsp_can.c ****  	txheader.DLC=8;
+ 216              		.loc 1 62 3 view .LVU65
+ 217              		.loc 1 62 15 is_stmt 0 view .LVU66
+ 218 0006 1049     		ldr	r1, .L11
+ 219              	.LVL10:
+ 220              		.loc 1 62 15 view .LVU67
+ 221 0008 0822     		movs	r2, #8
+ 222              	.LVL11:
+ 223              		.loc 1 62 15 view .LVU68
+ 224 000a 0A61     		str	r2, [r1, #16]
+  63:Core/Src/bsp_can.c **** 	txheader.IDE=CAN_ID_STD;
+ 225              		.loc 1 63 2 is_stmt 1 view .LVU69
+ 226              		.loc 1 63 14 is_stmt 0 view .LVU70
+ 227 000c 0022     		movs	r2, #0
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 6
+
+
+ 228 000e 8A60     		str	r2, [r1, #8]
+  64:Core/Src/bsp_can.c **** 	txheader.RTR=CAN_RTR_DATA;
+ 229              		.loc 1 64 2 is_stmt 1 view .LVU71
+ 230              		.loc 1 64 14 is_stmt 0 view .LVU72
+ 231 0010 CA60     		str	r2, [r1, #12]
+  65:Core/Src/bsp_can.c **** 	txheader.StdId=0x1FF;//电流控制-16384到16384
+ 232              		.loc 1 65 2 is_stmt 1 view .LVU73
+ 233              		.loc 1 65 16 is_stmt 0 view .LVU74
+ 234 0012 40F2FF12 		movw	r2, #511
+ 235 0016 0A60     		str	r2, [r1]
+  66:Core/Src/bsp_can.c **** 	Data[0]=(uint8_t)(I1>>8);//高八位
+ 236              		.loc 1 66 2 is_stmt 1 view .LVU75
+ 237              		.loc 1 66 10 is_stmt 0 view .LVU76
+ 238 0018 C0F30724 		ubfx	r4, r0, #8, #8
+ 239              		.loc 1 66 9 view .LVU77
+ 240 001c 0B4A     		ldr	r2, .L11+4
+ 241 001e 1470     		strb	r4, [r2]
+  67:Core/Src/bsp_can.c **** 	Data[1]=(uint8_t)I1;//低八位
+ 242              		.loc 1 67 2 is_stmt 1 view .LVU78
+ 243              		.loc 1 67 9 is_stmt 0 view .LVU79
+ 244 0020 5070     		strb	r0, [r2, #1]
+  68:Core/Src/bsp_can.c **** 
+  69:Core/Src/bsp_can.c **** 	Data[2]=(uint8_t)(I2>>8);
+ 245              		.loc 1 69 2 is_stmt 1 view .LVU80
+ 246              		.loc 1 69 10 is_stmt 0 view .LVU81
+ 247 0022 CEF30720 		ubfx	r0, lr, #8, #8
+ 248              	.LVL12:
+ 249              		.loc 1 69 9 view .LVU82
+ 250 0026 9070     		strb	r0, [r2, #2]
+  70:Core/Src/bsp_can.c **** 	Data[3]=(uint8_t)I2;
+ 251              		.loc 1 70 2 is_stmt 1 view .LVU83
+ 252              		.loc 1 70 9 is_stmt 0 view .LVU84
+ 253 0028 82F803E0 		strb	lr, [r2, #3]
+  71:Core/Src/bsp_can.c **** 
+  72:Core/Src/bsp_can.c **** 	Data[4]=(uint8_t)(I3>>8);
+ 254              		.loc 1 72 2 is_stmt 1 view .LVU85
+ 255              		.loc 1 72 10 is_stmt 0 view .LVU86
+ 256 002c CCF30720 		ubfx	r0, ip, #8, #8
+ 257              		.loc 1 72 9 view .LVU87
+ 258 0030 1071     		strb	r0, [r2, #4]
+  73:Core/Src/bsp_can.c **** 	Data[5]=(uint8_t)I3;
+ 259              		.loc 1 73 2 is_stmt 1 view .LVU88
+ 260              		.loc 1 73 9 is_stmt 0 view .LVU89
+ 261 0032 82F805C0 		strb	ip, [r2, #5]
+  74:Core/Src/bsp_can.c **** 
+  75:Core/Src/bsp_can.c **** 	Data[6]=(uint8_t)(I4>>8);
+ 262              		.loc 1 75 2 is_stmt 1 view .LVU90
+ 263              		.loc 1 75 10 is_stmt 0 view .LVU91
+ 264 0036 C3F30720 		ubfx	r0, r3, #8, #8
+ 265              		.loc 1 75 9 view .LVU92
+ 266 003a 9071     		strb	r0, [r2, #6]
+  76:Core/Src/bsp_can.c **** 	Data[7]=(uint8_t)I4;
+ 267              		.loc 1 76 2 is_stmt 1 view .LVU93
+ 268              		.loc 1 76 9 is_stmt 0 view .LVU94
+ 269 003c D371     		strb	r3, [r2, #7]
+  77:Core/Src/bsp_can.c **** 
+  78:Core/Src/bsp_can.c **** 	HAL_CAN_AddTxMessage(&hcan1,&txheader,Data,(uint32_t*)CAN_TX_MAILBOX0);
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 7
+
+
+ 270              		.loc 1 78 2 is_stmt 1 view .LVU95
+ 271 003e 0123     		movs	r3, #1
+ 272              	.LVL13:
+ 273              		.loc 1 78 2 is_stmt 0 view .LVU96
+ 274 0040 0348     		ldr	r0, .L11+8
+ 275 0042 FFF7FEFF 		bl	HAL_CAN_AddTxMessage
+ 276              	.LVL14:
+  79:Core/Src/bsp_can.c **** }
+ 277              		.loc 1 79 1 view .LVU97
+ 278 0046 10BD     		pop	{r4, pc}
+ 279              	.L12:
+ 280              		.align	2
+ 281              	.L11:
+ 282 0048 00000000 		.word	txheader.1
+ 283 004c 00000000 		.word	Data
+ 284 0050 00000000 		.word	hcan1
+ 285              		.cfi_endproc
+ 286              	.LFE136:
+ 288              		.section	.text.motorset,"ax",%progbits
+ 289              		.align	1
+ 290              		.global	motorset
+ 291              		.syntax unified
+ 292              		.thumb
+ 293              		.thumb_func
+ 295              	motorset:
+ 296              	.LVL15:
+ 297              	.LFB137:
+  80:Core/Src/bsp_can.c **** //将can数据解析为电机数据
+  81:Core/Src/bsp_can.c **** void motorset(Motor_t*Receive,uint8_t Data[]) //
+  82:Core/Src/bsp_can.c **** {
+ 298              		.loc 1 82 1 is_stmt 1 view -0
+ 299              		.cfi_startproc
+ 300              		@ args = 0, pretend = 0, frame = 0
+ 301              		@ frame_needed = 0, uses_anonymous_args = 0
+ 302              		@ link register save eliminated.
+  83:Core/Src/bsp_can.c **** 	Receive->angle=(Data[0]<<8)|Data[1];//转子机械角度
+ 303              		.loc 1 83 2 view .LVU99
+ 304              		.loc 1 83 22 is_stmt 0 view .LVU100
+ 305 0000 0A78     		ldrb	r2, [r1]	@ zero_extendqisi2
+ 306              		.loc 1 83 34 view .LVU101
+ 307 0002 4B78     		ldrb	r3, [r1, #1]	@ zero_extendqisi2
+ 308              		.loc 1 83 29 view .LVU102
+ 309 0004 43EA0223 		orr	r3, r3, r2, lsl #8
+ 310              		.loc 1 83 16 view .LVU103
+ 311 0008 0380     		strh	r3, [r0]	@ movhi
+  84:Core/Src/bsp_can.c **** 	Receive->speeed=(Data[2]<<8)|Data[3];//转速
+ 312              		.loc 1 84 2 is_stmt 1 view .LVU104
+ 313              		.loc 1 84 23 is_stmt 0 view .LVU105
+ 314 000a 8A78     		ldrb	r2, [r1, #2]	@ zero_extendqisi2
+ 315              		.loc 1 84 35 view .LVU106
+ 316 000c CB78     		ldrb	r3, [r1, #3]	@ zero_extendqisi2
+ 317              		.loc 1 84 30 view .LVU107
+ 318 000e 43EA0223 		orr	r3, r3, r2, lsl #8
+ 319              		.loc 1 84 17 view .LVU108
+ 320 0012 4380     		strh	r3, [r0, #2]	@ movhi
+  85:Core/Src/bsp_can.c **** 	Receive->torque=(Data[4]<<8)|Data[5];//输出转矩
+ 321              		.loc 1 85 2 is_stmt 1 view .LVU109
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 8
+
+
+ 322              		.loc 1 85 23 is_stmt 0 view .LVU110
+ 323 0014 0A79     		ldrb	r2, [r1, #4]	@ zero_extendqisi2
+ 324              		.loc 1 85 35 view .LVU111
+ 325 0016 4B79     		ldrb	r3, [r1, #5]	@ zero_extendqisi2
+ 326              		.loc 1 85 30 view .LVU112
+ 327 0018 43EA0223 		orr	r3, r3, r2, lsl #8
+ 328              		.loc 1 85 17 view .LVU113
+ 329 001c 8380     		strh	r3, [r0, #4]	@ movhi
+  86:Core/Src/bsp_can.c **** 	Receive->temp=Data[6];//温度
+ 330              		.loc 1 86 2 is_stmt 1 view .LVU114
+ 331              		.loc 1 86 20 is_stmt 0 view .LVU115
+ 332 001e 8B79     		ldrb	r3, [r1, #6]	@ zero_extendqisi2
+ 333              		.loc 1 86 15 view .LVU116
+ 334 0020 C380     		strh	r3, [r0, #6]	@ movhi
+  87:Core/Src/bsp_can.c **** }
+ 335              		.loc 1 87 1 view .LVU117
+ 336 0022 7047     		bx	lr
+ 337              		.cfi_endproc
+ 338              	.LFE137:
+ 340              		.section	.text.Null_Point,"ax",%progbits
+ 341              		.align	1
+ 342              		.global	Null_Point
+ 343              		.syntax unified
+ 344              		.thumb
+ 345              		.thumb_func
+ 347              	Null_Point:
+ 348              	.LVL16:
+ 349              	.LFB138:
+  88:Core/Src/bsp_can.c **** Motor_t Engine[6]={0};//控制四个电机
+  89:Core/Src/bsp_can.c **** //将角度转换为多圈角度
+  90:Core/Src/bsp_can.c **** void Null_Point(int32_t *D_value)
+  91:Core/Src/bsp_can.c **** {
+ 350              		.loc 1 91 1 is_stmt 1 view -0
+ 351              		.cfi_startproc
+ 352              		@ args = 0, pretend = 0, frame = 0
+ 353              		@ frame_needed = 0, uses_anonymous_args = 0
+ 354              		@ link register save eliminated.
+  92:Core/Src/bsp_can.c **** 	if (*D_value>4096)	*D_value=*D_value-8192;
+ 355              		.loc 1 92 2 view .LVU119
+ 356              		.loc 1 92 6 is_stmt 0 view .LVU120
+ 357 0000 0368     		ldr	r3, [r0]
+ 358              		.loc 1 92 5 view .LVU121
+ 359 0002 B3F5805F 		cmp	r3, #4096
+ 360 0006 02DD     		ble	.L15
+ 361              		.loc 1 92 21 is_stmt 1 discriminator 1 view .LVU122
+ 362              		.loc 1 92 38 is_stmt 0 discriminator 1 view .LVU123
+ 363 0008 A3F50053 		sub	r3, r3, #8192
+ 364              		.loc 1 92 29 discriminator 1 view .LVU124
+ 365 000c 0360     		str	r3, [r0]
+ 366              	.L15:
+  93:Core/Src/bsp_can.c **** 	if (*D_value<-4096)	*D_value=*D_value+8192;
+ 367              		.loc 1 93 2 is_stmt 1 view .LVU125
+ 368              		.loc 1 93 6 is_stmt 0 view .LVU126
+ 369 000e 0368     		ldr	r3, [r0]
+ 370              		.loc 1 93 5 view .LVU127
+ 371 0010 13F5805F 		cmn	r3, #4096
+ 372 0014 02DA     		bge	.L14
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 9
+
+
+ 373              		.loc 1 93 22 is_stmt 1 discriminator 1 view .LVU128
+ 374              		.loc 1 93 39 is_stmt 0 discriminator 1 view .LVU129
+ 375 0016 03F50053 		add	r3, r3, #8192
+ 376              		.loc 1 93 30 discriminator 1 view .LVU130
+ 377 001a 0360     		str	r3, [r0]
+ 378              	.L14:
+  94:Core/Src/bsp_can.c **** 
+  95:Core/Src/bsp_can.c **** }
+ 379              		.loc 1 95 1 view .LVU131
+ 380 001c 7047     		bx	lr
+ 381              		.cfi_endproc
+ 382              	.LFE138:
+ 384              		.section	.text.angle_multiround_calc,"ax",%progbits
+ 385              		.align	1
+ 386              		.global	angle_multiround_calc
+ 387              		.syntax unified
+ 388              		.thumb
+ 389              		.thumb_func
+ 391              	angle_multiround_calc:
+ 392              	.LVL17:
+ 393              	.LFB139:
+  96:Core/Src/bsp_can.c **** //计算多圈角度
+  97:Core/Src/bsp_can.c **** void angle_multiround_calc(uint8_t id)
+  98:Core/Src/bsp_can.c **** {
+ 394              		.loc 1 98 1 is_stmt 1 view -0
+ 395              		.cfi_startproc
+ 396              		@ args = 0, pretend = 0, frame = 0
+ 397              		@ frame_needed = 0, uses_anonymous_args = 0
+ 398              		.loc 1 98 1 is_stmt 0 view .LVU133
+ 399 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 400              	.LCFI5:
+ 401              		.cfi_def_cfa_offset 24
+ 402              		.cfi_offset 4, -24
+ 403              		.cfi_offset 5, -20
+ 404              		.cfi_offset 6, -16
+ 405              		.cfi_offset 7, -12
+ 406              		.cfi_offset 8, -8
+ 407              		.cfi_offset 14, -4
+ 408 0004 0446     		mov	r4, r0
+  99:Core/Src/bsp_can.c **** 	     current_angle[id]=Engine[id].angle;//得到当前角度
+ 409              		.loc 1 99 7 is_stmt 1 view .LVU134
+ 410              		.loc 1 99 35 is_stmt 0 view .LVU135
+ 411 0006 1A4B     		ldr	r3, .L20
+ 412 0008 00EB4002 		add	r2, r0, r0, lsl #1
+ 413 000c 03EBC205 		add	r5, r3, r2, lsl #3
+ 414 0010 33F93230 		ldrsh	r3, [r3, r2, lsl #3]
+ 415              		.loc 1 99 24 view .LVU136
+ 416 0014 174F     		ldr	r7, .L20+4
+ 417 0016 47F82030 		str	r3, [r7, r0, lsl #2]
+ 100:Core/Src/bsp_can.c **** 	     err[id]=current_angle[id]-Last_angle[id];//角度�??????
+ 418              		.loc 1 100 7 is_stmt 1 view .LVU137
+ 419              		.loc 1 100 43 is_stmt 0 view .LVU138
+ 420 001a 174E     		ldr	r6, .L20+8
+ 421 001c 56F82020 		ldr	r2, [r6, r0, lsl #2]
+ 422              		.loc 1 100 32 view .LVU139
+ 423 0020 9B1A     		subs	r3, r3, r2
+ 424              		.loc 1 100 14 view .LVU140
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 10
+
+
+ 425 0022 DFF86880 		ldr	r8, .L20+28
+ 426 0026 48F82030 		str	r3, [r8, r0, lsl #2]
+ 101:Core/Src/bsp_can.c **** 	     Null_Point(&err[id]);//零点判断
+ 427              		.loc 1 101 7 is_stmt 1 view .LVU141
+ 428 002a 08EB8000 		add	r0, r8, r0, lsl #2
+ 429              	.LVL18:
+ 430              		.loc 1 101 7 is_stmt 0 view .LVU142
+ 431 002e FFF7FEFF 		bl	Null_Point
+ 432              	.LVL19:
+ 102:Core/Src/bsp_can.c **** 	     Engine[id].angle_multiround+=err[id];//得到当前位置
+ 433              		.loc 1 102 7 is_stmt 1 view .LVU143
+ 434              		.loc 1 102 17 is_stmt 0 view .LVU144
+ 435 0032 AB68     		ldr	r3, [r5, #8]
+ 436              		.loc 1 102 39 view .LVU145
+ 437 0034 58F82420 		ldr	r2, [r8, r4, lsl #2]
+ 438              		.loc 1 102 34 view .LVU146
+ 439 0038 1344     		add	r3, r3, r2
+ 440 003a AB60     		str	r3, [r5, #8]
+ 103:Core/Src/bsp_can.c **** 	     Engine[id].angle_multiround=Engine[id].angle_multiround-a[id];
+ 441              		.loc 1 103 7 is_stmt 1 view .LVU147
+ 442              		.loc 1 103 64 is_stmt 0 view .LVU148
+ 443 003c 0F4A     		ldr	r2, .L20+12
+ 444 003e 52F82420 		ldr	r2, [r2, r4, lsl #2]
+ 445              		.loc 1 103 62 view .LVU149
+ 446 0042 9B1A     		subs	r3, r3, r2
+ 447              		.loc 1 103 34 view .LVU150
+ 448 0044 AB60     		str	r3, [r5, #8]
+ 104:Core/Src/bsp_can.c **** 	     Last_angle[id]=current_angle[id];//角度更新
+ 449              		.loc 1 104 7 is_stmt 1 view .LVU151
+ 450              		.loc 1 104 35 is_stmt 0 view .LVU152
+ 451 0046 57F82420 		ldr	r2, [r7, r4, lsl #2]
+ 452              		.loc 1 104 21 view .LVU153
+ 453 004a 46F82420 		str	r2, [r6, r4, lsl #2]
+ 105:Core/Src/bsp_can.c **** 	     if(f-Engine[id].angle_multiround<2&&f-Engine[id].angle_multiround>-2)
+ 454              		.loc 1 105 7 is_stmt 1 view .LVU154
+ 455              		.loc 1 105 11 is_stmt 0 view .LVU155
+ 456 004e 0C4A     		ldr	r2, .L20+16
+ 457 0050 1268     		ldr	r2, [r2]
+ 458 0052 D31A     		subs	r3, r2, r3
+ 459              		.loc 1 105 41 view .LVU156
+ 460 0054 0133     		adds	r3, r3, #1
+ 461              		.loc 1 105 9 view .LVU157
+ 462 0056 022B     		cmp	r3, #2
+ 463 0058 08D8     		bhi	.L17
+ 106:Core/Src/bsp_can.c **** 	     {
+ 107:Core/Src/bsp_can.c **** 	    	 speed_pid->E[0]=0;
+ 464              		.loc 1 107 8 is_stmt 1 view .LVU158
+ 465              		.loc 1 107 23 is_stmt 0 view .LVU159
+ 466 005a 0A4A     		ldr	r2, .L20+20
+ 467 005c 0023     		movs	r3, #0
+ 468 005e D362     		str	r3, [r2, #44]	@ float
+ 108:Core/Src/bsp_can.c **** 	    	 speed_pid->E[1]=0;
+ 469              		.loc 1 108 8 is_stmt 1 view .LVU160
+ 470              		.loc 1 108 23 is_stmt 0 view .LVU161
+ 471 0060 1363     		str	r3, [r2, #48]	@ float
+ 109:Core/Src/bsp_can.c **** 	    	 speed_pid->E[2]=0;
+ 472              		.loc 1 109 8 is_stmt 1 view .LVU162
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 11
+
+
+ 473              		.loc 1 109 23 is_stmt 0 view .LVU163
+ 474 0062 5363     		str	r3, [r2, #52]	@ float
+ 110:Core/Src/bsp_can.c **** 	    	 position_pid->E[2]=0;
+ 475              		.loc 1 110 8 is_stmt 1 view .LVU164
+ 476              		.loc 1 110 26 is_stmt 0 view .LVU165
+ 477 0064 084A     		ldr	r2, .L20+24
+ 478 0066 5363     		str	r3, [r2, #52]	@ float
+ 111:Core/Src/bsp_can.c **** 	    	 position_pid->E[1]=0;
+ 479              		.loc 1 111 8 is_stmt 1 view .LVU166
+ 480              		.loc 1 111 26 is_stmt 0 view .LVU167
+ 481 0068 1363     		str	r3, [r2, #48]	@ float
+ 112:Core/Src/bsp_can.c **** 	    	 position_pid->E[0]=0;
+ 482              		.loc 1 112 8 is_stmt 1 view .LVU168
+ 483              		.loc 1 112 26 is_stmt 0 view .LVU169
+ 484 006a D362     		str	r3, [r2, #44]	@ float
+ 485              	.L17:
+ 113:Core/Src/bsp_can.c **** 	     }
+ 114:Core/Src/bsp_can.c **** 
+ 115:Core/Src/bsp_can.c **** 
+ 116:Core/Src/bsp_can.c **** }
+ 486              		.loc 1 116 1 view .LVU170
+ 487 006c BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 488              	.L21:
+ 489              		.align	2
+ 490              	.L20:
+ 491 0070 00000000 		.word	Engine
+ 492 0074 00000000 		.word	current_angle
+ 493 0078 00000000 		.word	Last_angle
+ 494 007c 00000000 		.word	a
+ 495 0080 00000000 		.word	f
+ 496 0084 00000000 		.word	speed_pid
+ 497 0088 00000000 		.word	position_pid
+ 498 008c 00000000 		.word	err
+ 499              		.cfi_endproc
+ 500              	.LFE139:
+ 502              		.section	.text.HAL_CAN_RxFifo0MsgPendingCallback,"ax",%progbits
+ 503              		.align	1
+ 504              		.global	HAL_CAN_RxFifo0MsgPendingCallback
+ 505              		.syntax unified
+ 506              		.thumb
+ 507              		.thumb_func
+ 509              	HAL_CAN_RxFifo0MsgPendingCallback:
+ 510              	.LVL20:
+ 511              	.LFB140:
+ 117:Core/Src/bsp_can.c **** 
+ 118:Core/Src/bsp_can.c **** //在fifo0的中断回调里面完成数据接收
+ 119:Core/Src/bsp_can.c **** static int flag=0;
+ 120:Core/Src/bsp_can.c **** void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef*hcan)
+ 121:Core/Src/bsp_can.c **** {
+ 512              		.loc 1 121 1 is_stmt 1 view -0
+ 513              		.cfi_startproc
+ 514              		@ args = 0, pretend = 0, frame = 8
+ 515              		@ frame_needed = 0, uses_anonymous_args = 0
+ 122:Core/Src/bsp_can.c **** 	if(hcan->Instance==CAN1)
+ 516              		.loc 1 122 2 view .LVU172
+ 517              		.loc 1 122 9 is_stmt 0 view .LVU173
+ 518 0000 0268     		ldr	r2, [r0]
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 12
+
+
+ 519              		.loc 1 122 4 view .LVU174
+ 520 0002 324B     		ldr	r3, .L40
+ 521 0004 9A42     		cmp	r2, r3
+ 522 0006 00D0     		beq	.L38
+ 523 0008 7047     		bx	lr
+ 524              	.L38:
+ 123:Core/Src/bsp_can.c **** 	{
+ 124:Core/Src/bsp_can.c **** 
+ 125:Core/Src/bsp_can.c **** 		if(flag<2)
+ 525              		.loc 1 125 3 is_stmt 1 view .LVU175
+ 526              		.loc 1 125 10 is_stmt 0 view .LVU176
+ 527 000a 314B     		ldr	r3, .L40+4
+ 528 000c 1B68     		ldr	r3, [r3]
+ 529              		.loc 1 125 5 view .LVU177
+ 530 000e 012B     		cmp	r3, #1
+ 531 0010 12DD     		ble	.L39
+ 532              	.L24:
+ 126:Core/Src/bsp_can.c **** 			flag++;
+ 127:Core/Src/bsp_can.c **** 		if(flag==1)
+ 533              		.loc 1 127 3 is_stmt 1 view .LVU178
+ 534              		.loc 1 127 10 is_stmt 0 view .LVU179
+ 535 0012 2F4B     		ldr	r3, .L40+4
+ 536 0014 1B68     		ldr	r3, [r3]
+ 537              		.loc 1 127 5 view .LVU180
+ 538 0016 012B     		cmp	r3, #1
+ 539 0018 12D1     		bne	.L25
+ 128:Core/Src/bsp_can.c **** 		{
+ 129:Core/Src/bsp_can.c **** 			a[1]=Engine[1].angle;//将第一次编码值给到a
+ 540              		.loc 1 129 4 is_stmt 1 view .LVU181
+ 541              		.loc 1 129 18 is_stmt 0 view .LVU182
+ 542 001a 2E4A     		ldr	r2, .L40+8
+ 543 001c B2F91810 		ldrsh	r1, [r2, #24]
+ 544              		.loc 1 129 8 view .LVU183
+ 545 0020 2D4B     		ldr	r3, .L40+12
+ 546 0022 5960     		str	r1, [r3, #4]
+ 130:Core/Src/bsp_can.c **** 			a[2]=Engine[2].angle;//将第二次编码值给到a
+ 547              		.loc 1 130 4 is_stmt 1 view .LVU184
+ 548              		.loc 1 130 18 is_stmt 0 view .LVU185
+ 549 0024 B2F93010 		ldrsh	r1, [r2, #48]
+ 550              		.loc 1 130 8 view .LVU186
+ 551 0028 9960     		str	r1, [r3, #8]
+ 131:Core/Src/bsp_can.c **** 			a[3]=Engine[3].angle;//将第三次编码值给到a
+ 552              		.loc 1 131 4 is_stmt 1 view .LVU187
+ 553              		.loc 1 131 18 is_stmt 0 view .LVU188
+ 554 002a B2F94810 		ldrsh	r1, [r2, #72]
+ 555              		.loc 1 131 8 view .LVU189
+ 556 002e D960     		str	r1, [r3, #12]
+ 132:Core/Src/bsp_can.c **** 			a[4]=Engine[4].angle;//将第四次编码值给到a
+ 557              		.loc 1 132 4 is_stmt 1 view .LVU190
+ 558              		.loc 1 132 18 is_stmt 0 view .LVU191
+ 559 0030 B2F96020 		ldrsh	r2, [r2, #96]
+ 560              		.loc 1 132 8 view .LVU192
+ 561 0034 1A61     		str	r2, [r3, #16]
+ 562 0036 7047     		bx	lr
+ 563              	.L39:
+ 126:Core/Src/bsp_can.c **** 		if(flag==1)
+ 564              		.loc 1 126 4 is_stmt 1 view .LVU193
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 13
+
+
+ 126:Core/Src/bsp_can.c **** 		if(flag==1)
+ 565              		.loc 1 126 8 is_stmt 0 view .LVU194
+ 566 0038 0133     		adds	r3, r3, #1
+ 567 003a 254A     		ldr	r2, .L40+4
+ 568 003c 1360     		str	r3, [r2]
+ 569 003e E8E7     		b	.L24
+ 570              	.L25:
+ 121:Core/Src/bsp_can.c **** 	if(hcan->Instance==CAN1)
+ 571              		.loc 1 121 1 view .LVU195
+ 572 0040 10B5     		push	{r4, lr}
+ 573              	.LCFI6:
+ 574              		.cfi_def_cfa_offset 8
+ 575              		.cfi_offset 4, -8
+ 576              		.cfi_offset 14, -4
+ 577 0042 82B0     		sub	sp, sp, #8
+ 578              	.LCFI7:
+ 579              		.cfi_def_cfa_offset 16
+ 580              	.LBB2:
+ 133:Core/Src/bsp_can.c **** 		}
+ 134:Core/Src/bsp_can.c **** 		else
+ 135:Core/Src/bsp_can.c **** 		{
+ 136:Core/Src/bsp_can.c **** 				    uint8_t ReceiveData[8]={0};
+ 581              		.loc 1 136 9 is_stmt 1 view .LVU196
+ 582              		.loc 1 136 17 is_stmt 0 view .LVU197
+ 583 0044 0021     		movs	r1, #0
+ 584 0046 0091     		str	r1, [sp]
+ 585 0048 0191     		str	r1, [sp, #4]
+ 137:Core/Src/bsp_can.c **** 					static CAN_RxHeaderTypeDef Rxheader;//创建接收报文结构体
+ 586              		.loc 1 137 6 is_stmt 1 view .LVU198
+ 138:Core/Src/bsp_can.c **** 					HAL_CAN_GetRxMessage(&hcan1,CAN_RX_FIFO0,&Rxheader,ReceiveData);//将信息接收到fifo0邮�
+ 587              		.loc 1 138 6 view .LVU199
+ 588 004a 244C     		ldr	r4, .L40+16
+ 589 004c 6B46     		mov	r3, sp
+ 590 004e 2246     		mov	r2, r4
+ 591 0050 2348     		ldr	r0, .L40+20
+ 592              	.LVL21:
+ 593              		.loc 1 138 6 is_stmt 0 view .LVU200
+ 594 0052 FFF7FEFF 		bl	HAL_CAN_GetRxMessage
+ 595              	.LVL22:
+ 139:Core/Src/bsp_can.c **** 					switch(Rxheader.StdId)//判断ID
+ 596              		.loc 1 139 6 is_stmt 1 view .LVU201
+ 597              		.loc 1 139 21 is_stmt 0 view .LVU202
+ 598 0056 2368     		ldr	r3, [r4]
+ 599              		.loc 1 139 6 view .LVU203
+ 600 0058 A3F20123 		subw	r3, r3, #513
+ 601 005c 052B     		cmp	r3, #5
+ 602 005e 0BD8     		bhi	.L22
+ 603 0060 DFE803F0 		tbb	[pc, r3]
+ 604              	.L28:
+ 605 0064 03       		.byte	(.L33-.L28)/2
+ 606 0065 0C       		.byte	(.L32-.L28)/2
+ 607 0066 14       		.byte	(.L31-.L28)/2
+ 608 0067 1C       		.byte	(.L30-.L28)/2
+ 609 0068 24       		.byte	(.L29-.L28)/2
+ 610 0069 2C       		.byte	(.L27-.L28)/2
+ 611              		.p2align 1
+ 612              	.L33:
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 14
+
+
+ 140:Core/Src/bsp_can.c **** 					{
+ 141:Core/Src/bsp_can.c **** 					case 0x201:
+ 142:Core/Src/bsp_can.c **** 					{
+ 143:Core/Src/bsp_can.c **** 						motorset(&Engine[0],ReceiveData);
+ 613              		.loc 1 143 7 is_stmt 1 view .LVU204
+ 614 006a 6946     		mov	r1, sp
+ 615 006c 1948     		ldr	r0, .L40+8
+ 616 006e FFF7FEFF 		bl	motorset
+ 617              	.LVL23:
+ 144:Core/Src/bsp_can.c **** 						angle_multiround_calc(0);
+ 618              		.loc 1 144 7 view .LVU205
+ 619 0072 0020     		movs	r0, #0
+ 620 0074 FFF7FEFF 		bl	angle_multiround_calc
+ 621              	.LVL24:
+ 145:Core/Src/bsp_can.c **** 
+ 146:Core/Src/bsp_can.c **** 						break;
+ 622              		.loc 1 146 7 view .LVU206
+ 623              	.L22:
+ 624              	.LBE2:
+ 147:Core/Src/bsp_can.c **** 					}
+ 148:Core/Src/bsp_can.c **** 					case 0x202:
+ 149:Core/Src/bsp_can.c **** 					{
+ 150:Core/Src/bsp_can.c **** 						motorset(&Engine[1],ReceiveData);//处理接收到的数据，拿出来
+ 151:Core/Src/bsp_can.c **** 						angle_multiround_calc(1);
+ 152:Core/Src/bsp_can.c **** 
+ 153:Core/Src/bsp_can.c **** 						break;
+ 154:Core/Src/bsp_can.c **** 					}
+ 155:Core/Src/bsp_can.c **** 					case 0x203:
+ 156:Core/Src/bsp_can.c **** 					{
+ 157:Core/Src/bsp_can.c **** 						motorset(&Engine[2],ReceiveData);
+ 158:Core/Src/bsp_can.c **** 						angle_multiround_calc(2);
+ 159:Core/Src/bsp_can.c **** 						break;
+ 160:Core/Src/bsp_can.c **** 					}
+ 161:Core/Src/bsp_can.c **** 					case 0x204:
+ 162:Core/Src/bsp_can.c **** 					{
+ 163:Core/Src/bsp_can.c **** 						motorset(&Engine[3],ReceiveData);//处理接收到的数据，拿出来  //纵轴数据
+ 164:Core/Src/bsp_can.c **** 						angle_multiround_calc(3);
+ 165:Core/Src/bsp_can.c **** 						break;
+ 166:Core/Src/bsp_can.c **** 					}
+ 167:Core/Src/bsp_can.c **** 					case 0x205:
+ 168:Core/Src/bsp_can.c **** 					{
+ 169:Core/Src/bsp_can.c **** 						motorset(&Engine[4],ReceiveData);//处理接收到的数据，拿出来  //横轴数据
+ 170:Core/Src/bsp_can.c **** 						angle_multiround_calc(4);
+ 171:Core/Src/bsp_can.c **** 						break;
+ 172:Core/Src/bsp_can.c **** 					}
+ 173:Core/Src/bsp_can.c **** 					case 0x206:
+ 174:Core/Src/bsp_can.c **** 					{
+ 175:Core/Src/bsp_can.c **** 						motorset(&Engine[5],ReceiveData);//处理接收到的数据，拿出来  //旋转轴数据
+ 176:Core/Src/bsp_can.c **** 						angle_multiround_calc(5);
+ 177:Core/Src/bsp_can.c **** 						break;
+ 178:Core/Src/bsp_can.c **** 					}
+ 179:Core/Src/bsp_can.c **** 
+ 180:Core/Src/bsp_can.c **** 					}
+ 181:Core/Src/bsp_can.c **** 
+ 182:Core/Src/bsp_can.c **** 		}
+ 183:Core/Src/bsp_can.c **** 	}
+ 184:Core/Src/bsp_can.c **** }
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 15
+
+
+ 625              		.loc 1 184 1 is_stmt 0 view .LVU207
+ 626 0078 02B0     		add	sp, sp, #8
+ 627              	.LCFI8:
+ 628              		.cfi_remember_state
+ 629              		.cfi_def_cfa_offset 8
+ 630              		@ sp needed
+ 631 007a 10BD     		pop	{r4, pc}
+ 632              	.L32:
+ 633              	.LCFI9:
+ 634              		.cfi_restore_state
+ 635              	.LBB3:
+ 150:Core/Src/bsp_can.c **** 						angle_multiround_calc(1);
+ 636              		.loc 1 150 7 is_stmt 1 view .LVU208
+ 637 007c 6946     		mov	r1, sp
+ 638 007e 1948     		ldr	r0, .L40+24
+ 639 0080 FFF7FEFF 		bl	motorset
+ 640              	.LVL25:
+ 151:Core/Src/bsp_can.c **** 
+ 641              		.loc 1 151 7 view .LVU209
+ 642 0084 0120     		movs	r0, #1
+ 643 0086 FFF7FEFF 		bl	angle_multiround_calc
+ 644              	.LVL26:
+ 153:Core/Src/bsp_can.c **** 					}
+ 645              		.loc 1 153 7 view .LVU210
+ 646 008a F5E7     		b	.L22
+ 647              	.L31:
+ 157:Core/Src/bsp_can.c **** 						angle_multiround_calc(2);
+ 648              		.loc 1 157 7 view .LVU211
+ 649 008c 6946     		mov	r1, sp
+ 650 008e 1648     		ldr	r0, .L40+28
+ 651 0090 FFF7FEFF 		bl	motorset
+ 652              	.LVL27:
+ 158:Core/Src/bsp_can.c **** 						break;
+ 653              		.loc 1 158 7 view .LVU212
+ 654 0094 0220     		movs	r0, #2
+ 655 0096 FFF7FEFF 		bl	angle_multiround_calc
+ 656              	.LVL28:
+ 159:Core/Src/bsp_can.c **** 					}
+ 657              		.loc 1 159 7 view .LVU213
+ 658 009a EDE7     		b	.L22
+ 659              	.L30:
+ 163:Core/Src/bsp_can.c **** 						angle_multiround_calc(3);
+ 660              		.loc 1 163 7 view .LVU214
+ 661 009c 6946     		mov	r1, sp
+ 662 009e 1348     		ldr	r0, .L40+32
+ 663 00a0 FFF7FEFF 		bl	motorset
+ 664              	.LVL29:
+ 164:Core/Src/bsp_can.c **** 						break;
+ 665              		.loc 1 164 7 view .LVU215
+ 666 00a4 0320     		movs	r0, #3
+ 667 00a6 FFF7FEFF 		bl	angle_multiround_calc
+ 668              	.LVL30:
+ 165:Core/Src/bsp_can.c **** 					}
+ 669              		.loc 1 165 7 view .LVU216
+ 670 00aa E5E7     		b	.L22
+ 671              	.L29:
+ 169:Core/Src/bsp_can.c **** 						angle_multiround_calc(4);
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 16
+
+
+ 672              		.loc 1 169 7 view .LVU217
+ 673 00ac 6946     		mov	r1, sp
+ 674 00ae 1048     		ldr	r0, .L40+36
+ 675 00b0 FFF7FEFF 		bl	motorset
+ 676              	.LVL31:
+ 170:Core/Src/bsp_can.c **** 						break;
+ 677              		.loc 1 170 7 view .LVU218
+ 678 00b4 0420     		movs	r0, #4
+ 679 00b6 FFF7FEFF 		bl	angle_multiround_calc
+ 680              	.LVL32:
+ 171:Core/Src/bsp_can.c **** 					}
+ 681              		.loc 1 171 7 view .LVU219
+ 682 00ba DDE7     		b	.L22
+ 683              	.L27:
+ 175:Core/Src/bsp_can.c **** 						angle_multiround_calc(5);
+ 684              		.loc 1 175 7 view .LVU220
+ 685 00bc 6946     		mov	r1, sp
+ 686 00be 0D48     		ldr	r0, .L40+40
+ 687 00c0 FFF7FEFF 		bl	motorset
+ 688              	.LVL33:
+ 176:Core/Src/bsp_can.c **** 						break;
+ 689              		.loc 1 176 7 view .LVU221
+ 690 00c4 0520     		movs	r0, #5
+ 691 00c6 FFF7FEFF 		bl	angle_multiround_calc
+ 692              	.LVL34:
+ 177:Core/Src/bsp_can.c **** 					}
+ 693              		.loc 1 177 7 view .LVU222
+ 694              	.LBE3:
+ 695              		.loc 1 184 1 is_stmt 0 view .LVU223
+ 696 00ca D5E7     		b	.L22
+ 697              	.L41:
+ 698              		.align	2
+ 699              	.L40:
+ 700 00cc 00640040 		.word	1073767424
+ 701 00d0 00000000 		.word	flag
+ 702 00d4 00000000 		.word	Engine
+ 703 00d8 00000000 		.word	a
+ 704 00dc 00000000 		.word	Rxheader.0
+ 705 00e0 00000000 		.word	hcan1
+ 706 00e4 18000000 		.word	Engine+24
+ 707 00e8 30000000 		.word	Engine+48
+ 708 00ec 48000000 		.word	Engine+72
+ 709 00f0 60000000 		.word	Engine+96
+ 710 00f4 78000000 		.word	Engine+120
+ 711              		.cfi_endproc
+ 712              	.LFE140:
+ 714              		.section	.bss.Rxheader.0,"aw",%nobits
+ 715              		.align	2
+ 718              	Rxheader.0:
+ 719 0000 00000000 		.space	28
+ 719      00000000 
+ 719      00000000 
+ 719      00000000 
+ 719      00000000 
+ 720              		.section	.bss.txheader.1,"aw",%nobits
+ 721              		.align	2
+ 724              	txheader.1:
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 17
+
+
+ 725 0000 00000000 		.space	24
+ 725      00000000 
+ 725      00000000 
+ 725      00000000 
+ 725      00000000 
+ 726              		.section	.bss.txheader.2,"aw",%nobits
+ 727              		.align	2
+ 730              	txheader.2:
+ 731 0000 00000000 		.space	24
+ 731      00000000 
+ 731      00000000 
+ 731      00000000 
+ 731      00000000 
+ 732              		.section	.bss.flag,"aw",%nobits
+ 733              		.align	2
+ 736              	flag:
+ 737 0000 00000000 		.space	4
+ 738              		.global	Engine
+ 739              		.section	.bss.Engine,"aw",%nobits
+ 740              		.align	2
+ 743              	Engine:
+ 744 0000 00000000 		.space	144
+ 744      00000000 
+ 744      00000000 
+ 744      00000000 
+ 744      00000000 
+ 745              		.global	a
+ 746              		.section	.bss.a,"aw",%nobits
+ 747              		.align	2
+ 750              	a:
+ 751 0000 00000000 		.space	24
+ 751      00000000 
+ 751      00000000 
+ 751      00000000 
+ 751      00000000 
+ 752              		.global	err
+ 753              		.section	.bss.err,"aw",%nobits
+ 754              		.align	2
+ 757              	err:
+ 758 0000 00000000 		.space	24
+ 758      00000000 
+ 758      00000000 
+ 758      00000000 
+ 758      00000000 
+ 759              		.global	Last_angle
+ 760              		.section	.bss.Last_angle,"aw",%nobits
+ 761              		.align	2
+ 764              	Last_angle:
+ 765 0000 00000000 		.space	24
+ 765      00000000 
+ 765      00000000 
+ 765      00000000 
+ 765      00000000 
+ 766              		.global	current_angle
+ 767              		.section	.bss.current_angle,"aw",%nobits
+ 768              		.align	2
+ 771              	current_angle:
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 18
+
+
+ 772 0000 00000000 		.space	24
+ 772      00000000 
+ 772      00000000 
+ 772      00000000 
+ 772      00000000 
+ 773              		.global	myMotor
+ 774              		.section	.bss.myMotor,"aw",%nobits
+ 775              		.align	2
+ 778              	myMotor:
+ 779 0000 00000000 		.space	24
+ 779      00000000 
+ 779      00000000 
+ 779      00000000 
+ 779      00000000 
+ 780              		.global	Data
+ 781              		.section	.bss.Data,"aw",%nobits
+ 782              		.align	2
+ 785              	Data:
+ 786 0000 00000000 		.space	8
+ 786      00000000 
+ 787              		.text
+ 788              	.Letext0:
+ 789              		.file 2 "c:\\msys64\\mingw64\\arm-none-eabi\\include\\machine\\_default_types.h"
+ 790              		.file 3 "c:\\msys64\\mingw64\\arm-none-eabi\\include\\sys\\_stdint.h"
+ 791              		.file 4 "Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f407xx.h"
+ 792              		.file 5 "Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h"
+ 793              		.file 6 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h"
+ 794              		.file 7 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_can.h"
+ 795              		.file 8 "Core/Inc/bsp_can.h"
+ 796              		.file 9 "Core/Inc/can.h"
+ 797              		.file 10 "Core/Inc/pid.h"
+ARM GAS  C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s 			page 19
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 bsp_can.c
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:21     .text.can_Init:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:27     .text.can_Init:00000000 can_Init
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:94     .text.can_Init:00000034 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:99     .text.boxSend1:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:105    .text.boxSend1:00000000 boxSend1
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:187    .text.boxSend1:00000048 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:730    .bss.txheader.2:00000000 txheader.2
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:785    .bss.Data:00000000 Data
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:194    .text.boxSend2:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:200    .text.boxSend2:00000000 boxSend2
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:282    .text.boxSend2:00000048 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:724    .bss.txheader.1:00000000 txheader.1
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:289    .text.motorset:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:295    .text.motorset:00000000 motorset
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:341    .text.Null_Point:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:347    .text.Null_Point:00000000 Null_Point
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:385    .text.angle_multiround_calc:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:391    .text.angle_multiround_calc:00000000 angle_multiround_calc
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:491    .text.angle_multiround_calc:00000070 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:743    .bss.Engine:00000000 Engine
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:771    .bss.current_angle:00000000 current_angle
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:764    .bss.Last_angle:00000000 Last_angle
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:750    .bss.a:00000000 a
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:757    .bss.err:00000000 err
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:503    .text.HAL_CAN_RxFifo0MsgPendingCallback:00000000 $t
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:509    .text.HAL_CAN_RxFifo0MsgPendingCallback:00000000 HAL_CAN_RxFifo0MsgPendingCallback
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:605    .text.HAL_CAN_RxFifo0MsgPendingCallback:00000064 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:611    .text.HAL_CAN_RxFifo0MsgPendingCallback:0000006a $t
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:700    .text.HAL_CAN_RxFifo0MsgPendingCallback:000000cc $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:736    .bss.flag:00000000 flag
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:718    .bss.Rxheader.0:00000000 Rxheader.0
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:715    .bss.Rxheader.0:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:721    .bss.txheader.1:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:727    .bss.txheader.2:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:733    .bss.flag:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:740    .bss.Engine:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:747    .bss.a:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:754    .bss.err:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:761    .bss.Last_angle:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:768    .bss.current_angle:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:778    .bss.myMotor:00000000 myMotor
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:775    .bss.myMotor:00000000 $d
+C:\Users\lsj\AppData\Local\Temp\ccwxxnqB.s:782    .bss.Data:00000000 $d
+
+UNDEFINED SYMBOLS
+HAL_CAN_ConfigFilter
+HAL_CAN_ActivateNotification
+hcan1
+HAL_CAN_AddTxMessage
+f
+speed_pid
+position_pid
+HAL_CAN_GetRxMessage

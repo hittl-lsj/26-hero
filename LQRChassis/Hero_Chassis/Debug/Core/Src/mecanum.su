@@ -1,0 +1,2 @@
+../Core/Src/mecanum.c:15:6:mecanum_calc	40	static
+../Core/Src/mecanum.c:34:6:mecanum_Set_Motor_Speed	16	static
