@@ -5,33 +5,50 @@
 
 #### 软件架构
 软件架构说明
+本仓库工程基于：
+湖南大学RoboMaster跃鹿战队2022-2023电控通用嵌入式框架https://gitee.com/hnuyuelurm/basic_framework#https://gitee.com/link?target=https%3A%2F%2Fgithub.com%2FHNUYueLuRM%2Fbasic_framework
+达妙MC02开发板适配框架：https://gitee.com/LitzJ/basic_framework_mc02
+首先，总览框架的设计模式。
 
+框架在结构上分为三层：bsp/module/app。整体使用的设计模式是结构层级模式，即每个“类”包含需要使用的底层“类”，通过组装不同的基础模实现更强大的功能。而最顶层的app之间则通过pub-sub消息机制进行解耦，使得在编写代码时不会出现相互包含的情况。
 
+我们希望通过bsp对硬件的抽象使得module的编写更为轻松，不需要考虑底层的硬件具体是如何运作的；再通过module的外接模块的抽象，使得app的编写可以通过完全硬件无关的方式考虑，达到*”只阅读module的说明文档就能迅速开发应用 ”的程度。bsp和module的设计愿景，就是成为人们常说的中间件。*
+
+pub-sub机制的体现：以本仓库的app层为例，包含了chassis，gimbal，shoot，cmd四个应用，每个应用都对应了机器人上的不同模组。cmd应用负责从机器人控制信号来源（遥控器/上位机/环境传感器）处获取信息并解析成各个执行单元的实际动作（电机/舵机/气缸/阀门等的扭矩/速度/位置/角度/开度等），并将此信息发布出去。chassis、gimbal、shoot等包含了执行单元的应用则订阅这些消息，并通过自己包含的子模块，调用它们的接口实现动作。
+
+结构层级模式的体现：以chassis应用为例，chassis中包含了4个底盘电机模块。当chassis收到cmd应用的信息，希望让底盘以1m/s的速度前进。chassis首先根据底盘的类型（舵轮/麦克纳姆轮/全向轮/平衡底盘）以及对应的动力学/运动学解算函数，计算得到每个电机的输目标输入值，此时chassis将输入通过电机模块（motor module）的接口将设定值告知电机。而每个电机模块又有各自的PID计算模块和自身电流&速度&角度传感器的信息，可以计算出最终需要的电流设定值。假设该电机使用CAN协议与电调通信，则电机通过自身包含的CANInstance（bsp_can提供）用于和实际硬件交互，电机模块将设定值电流值或其他指令按照通信协议组织在CAN报文中，通过CANInstance提供的接口，把最终控制数据发送给电调，实现控制闭环。从调用来看，三个层级的包含关系为chassis∈motor∈bspcan。
+
+有了上面的大体认知，我们分别介绍框架的三层结构。
+
+bsp即板级支持包，提供对开发板外设的软件抽象，让module层能使用和硬件无关的接口（由bsp提供）进行数据处理与交互。
+
+bsp层和ST的HAL为强耦合，与硬件直接绑定。若要向其他的ST芯片移植，基本不需要修改bsp层；若是其他单片机则建议保留接口设计，对接口调用进行重现实现。每一种外设的头文件中都定义了一个XXXInstance（xxx为外设名），其中包含了使用该外设所需要的所有数据，如发送/接收的数据，长度，id（如果有），父指针（指向module实例的指针，用于回调）等。由于C没有class，因此所有bsp的接口都需要传入一个额外的参数：XXXInstance*，用于实现c++的this指针以区分具体是哪一个实例调用了接口。
+
+module即模块层，包括了需要开发板硬件外设支持的（一般用于通信）真实硬件模组如电机、舵机、imu、测距传感器，和通过软件实现的算法如PID、滤波器、状态观测器；还有用于兼容不同控制信息模块（遥控器/ps手柄/图传链路/上位机）的统一接口模块，以及为app层提供数据交互的message center。
+
+module层仍然是基于实例的，一个app会包含多个module的instance。当app便可以用硬件无关的接口使用module，如要求电机以一定速度运动、关闭气阀、给超级电容或上位机发送一些反馈数据等。在有了方便的bsp之后，只需要在你构建的module中包含必须的bsp，然后为app提供合理易用的接口即可。
+
+app是框架层级中最高的部分。目前的框架设计里，会有多个app任务运行在freertos中，当然你也可以根据需要启动一些事件驱动的任务，所有的任务安排都放在app/robot_task中。当前的app层仅是一个机器人开发的示例，有了封装程度极高的module，你可以在app完成任何事情。
+
+目前的app设计里，可以兼容多块开发板的情况，通过条件编译切换开发板的位置。如步兵机器人可以将主控MCU放在云台上，而超级电容控制板同时作为底盘板。使用CAN/SPI/UART将两者连接，便可以通过**app/robot_def.h**中的宏完成设置。可以根据需要，设置更多的开发板（双云台哨兵、工程机器人）。
+
+这套框架可以轻松扩展到所有机器人上，在我们的仓库中，有步兵机器人、平衡步兵机器人、哨兵机器人、英雄机器人、工程机器人以及空中机器人的代码实例，皆按照本框架中的三层结构开发。若设计了新的机器人，只需要在robot_def.h中修改传感器的位置、底盘轮距轴距、拨弹盘容量、弹舱载弹量等参数便可以立刻实现部署。
+
+知道了每个层级的结构之后，我们再谈谈如何进行每层的开发。
+
+对于bsp和module中每个instance的设计，我们采用了面向对象的C风格代码，整个框架也统一了变量和函数命名方式，调用层级和数据流十分清晰（下一个章节也有插图阐述）。
+
+为了避免出现”底层代码包含上层头文件“的情况，我们让bsp层instance在注册时要求module提供数据发送/接收的回调函数指针，从而在发生对应中断或事件时完成对module函数的”反向调用“。事实上，你也可以进一步将这套思想放入app的设计中，当某个事件发生时触发app的任务，而不是将app的任务定时运行（这可以提高运行效率，降低cpu占用）。
+
+bsp和module的instance在初始化时接口皆为**XXXInstance* XXXRegister(XXX_Init_Config_s* conf)**，传入该实例所需的config参数，返回一个实例指针（看作this指针），之后要调用模块的功能，传入该指针即可。我们还提供了守护线程，以供module选用，当异常情况发生时在LOG中发送warning、触发蜂鸣器或LED进行声光报警以及错误/离线回调函数，保证系统的鲁棒性和安全性。
+
+而对于app的开发，由于底层接口已经设计的较为完善，不同的机器人可以直接**fork** basic_framework的代码，开发app层。当bsp和module有功能更新时，只需要通过git的cherry-pick-commit功能将更新拉取到自己的仓库，获得动态的热更新而无需手动合并分支！
 #### 安装教程
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+由changfengpro老登整理Ubuntu下的STM32开发环境搭建(Vscode + CubeMX + Ozone)
+http://rmer-hy.ip-ddns.com/2025/02/26/Ubuntu%E4%B8%8B%E7%9A%84STM32%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA-Vscode-CubeMX-Ozone/
 
 #### 使用说明
 
 1.  配置Cubemx+VScode+Ozone编译链
-2.  xxxx
-3.  xxxx
 
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
-
-
-#### 特技
-
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
